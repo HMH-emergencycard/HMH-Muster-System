@@ -38,6 +38,20 @@
 
   var parsedEmployees = [];
 
+  // ── Flexible column finder ──
+  // Finds a column index by checking if any header contains the keyword (case-insensitive)
+  function findCol(headers, keyword) {
+    var kw = keyword.toLowerCase();
+    for (var i = 0; i < headers.length; i++) {
+      if (headers[i].toLowerCase().replace(/\s+/g, ' ').trim() === kw) return i;
+    }
+    // Fallback: partial match
+    for (var i = 0; i < headers.length; i++) {
+      if (headers[i].toLowerCase().indexOf(kw) !== -1) return i;
+    }
+    return -1;
+  }
+
   // ── Drag & drop ──
   var dropZone = document.getElementById('dropZone');
   dropZone.addEventListener('dragover', function (e) { e.preventDefault(); dropZone.classList.add('dragover'); });
@@ -69,8 +83,9 @@
         var data     = new Uint8Array(e.target.result);
         var workbook = XLSX.read(data, { type: 'array' });
 
-        var totalTabs   = 0;
-        var skippedTabs = [];
+        var totalTabs    = 0;
+        var skippedTabs  = [];
+        var debugLines   = [];
 
         workbook.SheetNames.forEach(function (sheetName) {
           var locationId = TAB_MAP[sheetName.trim()];
@@ -80,17 +95,16 @@
           }
           totalTabs++;
 
-          var sheet = workbook.Sheets[sheetName];
-
-          // Get all rows as arrays (no header assumption)
+          var sheet   = workbook.Sheets[sheetName];
           var allRows = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' });
 
-          // Find the header row — look for the row that contains 'Worker ID'
+          // Find the header row — look for a row containing 'worker id' (case-insensitive)
           var headerRowIdx = -1;
           var headers      = [];
           for (var i = 0; i < allRows.length; i++) {
             var row = allRows[i].map(function (c) { return String(c).trim(); });
-            if (row.indexOf('Worker ID') !== -1) {
+            var lower = row.map(function(c){ return c.toLowerCase(); });
+            if (lower.indexOf('worker id') !== -1) {
               headerRowIdx = i;
               headers      = row;
               break;
@@ -98,29 +112,32 @@
           }
 
           if (headerRowIdx === -1) {
-            // Could not find header row in this tab — skip
-            skippedTabs.push(sheetName + ' (no header row found)');
+            skippedTabs.push(sheetName + ' (header row not found)');
             totalTabs--;
             return;
           }
 
-          // Column index lookup
-          var colWorker  = headers.indexOf('Worker');
-          var colId      = headers.indexOf('Worker ID');
-          var colPos     = headers.indexOf('Position');
-          var colOrg     = headers.indexOf('Supervisory Organization');
-          var colPhone   = headers.indexOf('Phone');
+          // Find columns flexibly
+          var colWorker = findCol(headers, 'worker');
+          var colId     = findCol(headers, 'worker id');
+          var colPos    = findCol(headers, 'position');
+          var colOrg    = findCol(headers, 'supervisory organization');
+          var colPhone  = findCol(headers, 'phone');
 
-          // Process data rows (everything after the header row)
+          debugLines.push(sheetName + ': header row ' + (headerRowIdx+1) +
+            ', Worker col=' + colWorker + ', Worker ID col=' + colId +
+            ', headers=[' + headers.join('|') + ']');
+
+          var countBefore = parsedEmployees.length;
+
           for (var r = headerRowIdx + 1; r < allRows.length; r++) {
-            var row    = allRows[r];
-            var name   = colWorker >= 0 ? String(row[colWorker] || '').trim() : '';
-            var wid    = colId     >= 0 ? String(row[colId]     || '').trim() : '';
-            var pos    = colPos    >= 0 ? String(row[colPos]    || '').trim() : '';
-            var org    = colOrg    >= 0 ? String(row[colOrg]    || '').trim() : '';
-            var phone  = colPhone  >= 0 ? String(row[colPhone]  || '').trim() : '';
+            var row   = allRows[r];
+            var name  = colWorker >= 0 ? String(row[colWorker] || '').trim() : '';
+            var wid   = colId     >= 0 ? String(row[colId]     || '').trim() : '';
+            var pos   = colPos    >= 0 ? String(row[colPos]    || '').trim() : '';
+            var org   = colOrg    >= 0 ? String(row[colOrg]    || '').trim() : '';
+            var phone = colPhone  >= 0 ? String(row[colPhone]  || '').trim() : '';
 
-            // Skip empty rows
             if (!name || !wid) continue;
 
             parsedEmployees.push({
@@ -132,11 +149,21 @@
               assignedLocation: locationId
             });
           }
+
+          debugLines.push('  → ' + (parsedEmployees.length - countBefore) + ' employees read');
         });
 
+        console.log('=== ROSTER UPLOAD DEBUG ===');
+        debugLines.forEach(function(l){ console.log(l); });
+
         if (parsedEmployees.length === 0) {
-          setStatus('\u26A0 No employees found. Check tab names and column headers match exactly.', 0);
+          setStatus('\u26A0 0 employees found. Check browser console (F12) for debug info.', 0);
           renderSkipped(skippedTabs);
+          // Show debug info on page
+          document.getElementById('summaryArea').innerHTML +=
+            '<details style="margin-top:12px;"><summary style="cursor:pointer;color:#1976d2;">&#x1F50D; Debug info (click to expand)</summary>' +
+            '<pre style="font-size:0.75rem;background:#f5f5f5;padding:10px;border-radius:6px;overflow:auto;">' +
+            debugLines.join('\n') + '</pre></details>';
           return;
         }
 
@@ -155,12 +182,12 @@
   };
 
   function renderSkipped(skippedTabs) {
-    if (!skippedTabs.length) return;
-    document.getElementById('summaryArea').innerHTML =
-      '<p style="color:#e65100;font-size:0.9rem;">&#x26A0; Skipped tabs (not recognised): <strong>' +
-      skippedTabs.join(', ') + '</strong></p>' +
-      '<p style="font-size:0.85rem;color:#555;">Expected tab names: ' +
-      Object.keys(TAB_MAP).join(', ') + '</p>';
+    var html = '';
+    if (skippedTabs.length) {
+      html += '<p style="color:#e65100;font-size:0.9rem;">&#x26A0; Skipped tabs: <strong>' + skippedTabs.join(', ') + '</strong></p>';
+      html += '<p style="font-size:0.82rem;color:#555;">Expected tab names: ' + Object.keys(TAB_MAP).join(', ') + '</p>';
+    }
+    document.getElementById('summaryArea').innerHTML = html;
   }
 
   function renderSummary(totalTabs, skippedTabs) {
@@ -177,11 +204,9 @@
       html += '<div class="summary-card"><strong>' + byLoc[loc] + '</strong>' + label + '</div>';
     });
     html += '</div>';
-
     if (skippedTabs.length) {
       html += '<p style="color:#e65100;font-size:0.85rem;">&#x26A0; Skipped tabs: ' + skippedTabs.join(', ') + '</p>';
     }
-
     document.getElementById('summaryArea').innerHTML = html;
   }
 
@@ -201,12 +226,10 @@
 
   window.saveToFirebase = function () {
     if (!parsedEmployees.length) { showToast('No employees to save'); return; }
-
     var saveBtn = document.getElementById('saveBtn');
     saveBtn.disabled    = true;
     saveBtn.textContent = 'Saving...';
     setStatus('Saving to Firebase...', 60);
-
     var rosterObj = {};
     parsedEmployees.forEach(function (e) {
       rosterObj[e.workerId] = {
@@ -217,7 +240,6 @@
         assignedLocation: e.assignedLocation
       };
     });
-
     db.ref('roster').set(rosterObj).then(function () {
       setStatus('\u2705 Roster saved! ' + parsedEmployees.length + ' employees updated in Firebase.', 100);
       saveBtn.textContent = '\u2705 Saved!';
