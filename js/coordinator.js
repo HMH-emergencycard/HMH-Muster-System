@@ -21,13 +21,26 @@
   document.getElementById('coordinatorNames').textContent =
     'Coordinators: ' + loc.coordinators.join(', ');
 
+  // Show loading message while roster loads
+  var tbody = document.getElementById('employeeBody');
+  tbody.innerHTML = '<tr><td colspan="3" style="padding:16px;text-align:center;color:#888;">&#x23F3; Loading roster...</td></tr>';
+
   // ── Wait for roster to load from Firebase before rendering ──
   onRosterReady(function () {
+    console.log('Roster ready, EMPLOYEES count:', EMPLOYEES.length);
+    console.log('Employees for this location:', getEmployeesByLocation(locationId).length);
+
+    if (EMPLOYEES.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="3" style="padding:16px;text-align:center;color:#e53935;">'
+        + '&#x26A0; No roster loaded. Please <a href="admin-upload.html">upload the roster</a> first.'
+        + '</td></tr>';
+      return;
+    }
+
     init();
   });
 
   function init() {
-    // Employees assigned to THIS location
     var employees = getEmployeesByLocation(locationId);
 
     // ── Show banner if no active session ──
@@ -149,7 +162,6 @@
     // ── Render table ──
     function renderTable(checkins, filter) {
       filter = filter || '';
-      var tbody = document.getElementById('employeeBody');
       tbody.innerHTML = '';
 
       var pool;
@@ -219,9 +231,9 @@
       return ci.location === locationId ? 1 : 2;
     }
 
-    // Initial render with empty checkins
+    // Initial render
     renderTable({});
     updateCount({});
-  } // end init()
+  }
 
 })();
