@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Check-In Confirmation</title>
+  <link rel="stylesheet" href="css/muster.css">
+</head>
+<body>
+
+<div class="header">
+  <img src="logo.png" alt="HMH Logo" onerror="this.style.display='none'">
+  <h1>HMH Muster Check-In</h1>
+</div>
+
+<div class="checkin-confirm" id="confirmBox">
+  <div class="check-icon">&#x23F3;</div>
+  <h2>Processing...</h2>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script src="js/app.js"></script>
+<script>
+(function () {
+  const params = new URLSearchParams(window.location.search);
+  const wid    = params.get('id');
+  const box    = document.getElementById('confirmBox');
+
+  if (!wid) {
+    box.innerHTML = '<div class="check-icon">&#x274C;</div><h2 style="color:#dc3545">Invalid Link</h2><p class="emp-detail">No Worker ID found in URL.</p>';
+    return;
+  }
+
+  const emp = getEmployeeById(wid);
+  if (!emp) {
+    box.innerHTML = '<div class="check-icon">&#x274C;</div><h2 style="color:#dc3545">Not Found</h2><p class="emp-detail">Worker ID <strong>' + wid + '</strong> was not found in the roster.</p>';
+    return;
+  }
+
+  const loc      = getLocation(emp.assignedLocation);
+  const locLabel = loc ? loc.label : emp.assignedLocation;
+
+  checkInEmployee(wid, emp.assignedLocation).then(function () {
+    const now = new Date().toLocaleTimeString();
+    box.innerHTML =
+      '<div class="check-icon">&#x2705;</div>' +
+      '<h2>' + emp.name + '</h2>' +
+      '<p class="emp-detail">' + emp.position + ' &mdash; ' + emp.supervisoryOrg + '</p>' +
+      '<p class="emp-detail" style="font-size:1.2rem;font-weight:bold;color:#00AEEF;margin-top:10px">Checked In at ' + locLabel + '</p>' +
+      '<p class="emp-detail">Time: ' + now + '</p>' +
+      '<button class="btn btn-primary" style="margin-top:20px" onclick="goBack()">Done</button>' +
+      '<p class="redirect-note">Redirecting in <span id="countdown">3</span>s&hellip;</p>';
+
+    var secs  = 3;
+    var timer = setInterval(function () {
+      secs--;
+      var el = document.getElementById('countdown');
+      if (el) el.textContent = secs;
+      if (secs <= 0) { clearInterval(timer); goBack(); }
+    }, 1000);
+  }).catch(function (err) {
+    box.innerHTML = '<div class="check-icon">&#x274C;</div><h2 style="color:#dc3545">Error</h2><p class="emp-detail">' + err.message + '</p>';
+  });
+
+  window.goBack = function () {
+    window.location.href = 'coordinator.html?location=' + encodeURIComponent(emp.assignedLocation);
+  };
+})();
+</script>
+</body>
+</html>
