@@ -17,13 +17,13 @@
 
 <div class="page-coordinator">
   <div class="toolbar">
+    <a href="index.html" class="btn btn-back">&larr; Back</a>
     <input type="text" class="search-box" id="searchBox" placeholder="Search name or Worker ID (type 2+ chars to search ALL employees)...">
     <button class="btn btn-primary" id="nfcBtn">&#x1F4F1; Start NFC Scan</button>
-    <button class="btn btn-success" id="sessionBtn">&#x25B6; Start Session</button>
   </div>
-  <div class="nfc-note">
-    &#x26A0;&#xFE0F; NFC scanning works on Android Chrome. iPhone users: use manual check-in by searching above.
-    Searching 2+ characters will show <strong>all employees</strong> — useful for walk-ins from other locations.
+
+  <div class="no-session-banner" id="noSessionBanner" style="display:none">
+    &#x26A0;&#xFE0F; No active session. Ask your manager to start a session from the dashboard.
   </div>
 
   <table class="employee-table">

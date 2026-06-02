@@ -24,51 +24,27 @@
   // Employees assigned to THIS location
   const employees = getEmployeesByLocation(locationId);
 
-  // ── Session Start / Stop ──
-  var sessionActive = !!getActiveSession();
-
-  function updateSessionBtn() {
-    var btn = document.getElementById('sessionBtn');
-    if (sessionActive) {
-      btn.innerHTML  = '&#x23F9; Stop Session';
-      btn.className  = 'btn btn-danger';
-    } else {
-      btn.innerHTML  = '&#x25B6; Start Session';
-      btn.className  = 'btn btn-success';
-    }
+  // ── Show banner if no active session ──
+  function checkSessionBanner() {
+    var banner = document.getElementById('noSessionBanner');
+    if (banner) banner.style.display = getActiveSession() ? 'none' : 'block';
   }
+  checkSessionBanner();
 
-  updateSessionBtn();
+  // Re-check session banner every 5 seconds (manager may start one from dashboard)
+  setInterval(checkSessionBanner, 5000);
 
-  document.getElementById('sessionBtn').addEventListener('click', function () {
-    if (!sessionActive) {
-      // Start
-      var id = startNewSession();
-      sessionActive = true;
-      updateSessionBtn();
-      showToast('Session started \u2705');
-      renderTable({});
-      listenForCheckins();
-    } else {
-      // Stop
-      var current = getActiveSession();
-      if (current) {
-        db.ref('sessions/' + current + '/active').set(false);
-        db.ref('sessions/' + current + '/endedAt').set(new Date().toISOString());
+  // Also watch Firebase for active session
+  db.ref('sessions').orderByChild('active').equalTo(true).limitToLast(1)
+    .on('value', function (snap) {
+      var val = snap.val();
+      if (val) {
+        var sessionId = Object.keys(val)[0];
+        setActiveSession(sessionId);
+        checkSessionBanner();
+        listenForCheckins();
       }
-      sessionStorage.removeItem('musterSession');
-      sessionActive = false;
-      updateSessionBtn();
-      showToast('Session stopped \u23F9');
-    }
-  });
-
-  // Ensure session state is shown on load
-  if (!getActiveSession()) {
-    showToast('Tap "Start Session" to begin check-in.');
-  } else {
-    listenForCheckins();
-  }
+    });
 
   // ── NFC ──
   const nfcBtn  = document.getElementById('nfcBtn');
@@ -112,7 +88,6 @@
   });
 
   // ── Search box ──
-  // Searches ALL employees (not just this location) so walk-ins can be checked in here
   document.getElementById('searchBox').addEventListener('input', function () {
     var q = this.value.trim().toLowerCase();
     renderTable(currentCheckins, q);
@@ -133,10 +108,12 @@
     });
   }
 
+  if (getActiveSession()) listenForCheckins();
+
   // ── Check-in handler ──
   function handleCheckIn(workerId) {
     if (!getActiveSession()) {
-      showToast('No active session. Tap "Start Session" first.');
+      showToast('No active session. Ask your manager to start one.');
       return;
     }
     var emp = getEmployeeById(workerId);
@@ -166,23 +143,18 @@
   }
 
   // ── Render table ──
-  // When search is active: show ALL employees matching the query (walk-ins included)
-  // When no search: show only this location's employees
   function renderTable(checkins, filter) {
     filter = filter || '';
     var tbody = document.getElementById('employeeBody');
     tbody.innerHTML = '';
 
-    // Decide which employee list to show
     var pool;
     if (filter.length >= 2) {
-      // Search all employees so coordinators can find walk-ins from other locations
       pool = EMPLOYEES.filter(function (e) {
         return e.name.toLowerCase().indexOf(filter) !== -1 ||
                e.workerId.toLowerCase().indexOf(filter) !== -1;
       });
     } else {
-      // Default: only this location's employees, sorted unchecked first
       pool = employees.slice().sort(function (a, b) {
         return statusOrder(a, checkins) - statusOrder(b, checkins);
       });
@@ -234,7 +206,6 @@
     });
   }
 
-  // Exposed globally so inline onclick works
   window.doCheckIn = function (workerId, event) {
     if (event) event.stopPropagation();
     handleCheckIn(workerId);

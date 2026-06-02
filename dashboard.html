@@ -11,6 +11,7 @@
 <!-- PIN Overlay -->
 <div id="pin-overlay">
   <div class="pin-box">
+    <img src="logo.png" alt="HMH Logo" style="max-width:160px;margin-bottom:16px;" onerror="this.style.display='none'">
     <h2>Manager Access</h2>
     <p>Enter your PIN to view the muster dashboard</p>
     <input type="password" class="pin-input" id="pinInput" maxlength="6" placeholder="&#x2022;&#x2022;&#x2022;&#x2022;" inputmode="numeric">
@@ -36,7 +37,13 @@
       <span class="active-dot" id="activeDot"></span>
       <span id="sessionStatus">No active session</span>
     </div>
-    <div class="meta" id="lastUpdated"></div>
+    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+      <button class="btn btn-success" id="sessionBtn">&#x25B6; Start Session</button>
+      <div class="meta" id="lastUpdated"></div>
+    </div>
+    <div>
+      <a href="index.html" class="btn btn-back">&larr; Back to Locations</a>
+    </div>
   </div>
   <div class="dashboard-grid" id="dashboardGrid"></div>
 </div>
