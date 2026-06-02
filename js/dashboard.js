@@ -47,28 +47,66 @@
       grid.appendChild(card);
     });
 
-    // Listen for checkin updates
-    var session = getActiveSession();
-    if (session) {
-      startListening(session);
+    // ── Session Start / Stop ──
+    var sessionBtn = document.getElementById('sessionBtn');
+
+    function updateSessionBtn(active) {
+      if (active) {
+        sessionBtn.innerHTML  = '&#x23F9; Stop Session';
+        sessionBtn.className  = 'btn btn-danger';
+      } else {
+        sessionBtn.innerHTML  = '&#x25B6; Start Session';
+        sessionBtn.className  = 'btn btn-success';
+      }
     }
 
-    // Also watch for any active session in Firebase
+    // Reflect current state on load
+    updateSessionBtn(!!getActiveSession());
+
+    sessionBtn.addEventListener('click', function () {
+      var current = getActiveSession();
+      if (!current) {
+        // Start new session
+        var id = startNewSession();
+        updateSessionBtn(true);
+        document.getElementById('activeDot').classList.add('active');
+        document.getElementById('sessionStatus').textContent = 'Session started at ' + new Date().toLocaleTimeString();
+        startListening(id);
+        showToast('Session started \u2705');
+      } else {
+        // Stop session
+        db.ref('sessions/' + current + '/active').set(false);
+        db.ref('sessions/' + current + '/endedAt').set(new Date().toISOString());
+        sessionStorage.removeItem('musterSession');
+        updateSessionBtn(false);
+        document.getElementById('activeDot').classList.remove('active');
+        document.getElementById('sessionStatus').textContent = 'No active session';
+        showToast('Session stopped \u23F9');
+      }
+    });
+
+    // Listen for active session in Firebase
     db.ref('sessions').orderByChild('active').equalTo(true).limitToLast(1)
       .on('value', function (snap) {
         var val = snap.val();
         if (val) {
           var sessionId = Object.keys(val)[0];
           setActiveSession(sessionId);
+          updateSessionBtn(true);
           document.getElementById('activeDot').classList.add('active');
           document.getElementById('sessionStatus').textContent = 'Session active since ' +
             new Date(val[sessionId].startedAt).toLocaleTimeString();
           startListening(sessionId);
         } else {
+          updateSessionBtn(false);
           document.getElementById('activeDot').classList.remove('active');
           document.getElementById('sessionStatus').textContent = 'No active session';
         }
       });
+
+    // Listen for current session if already active
+    var session = getActiveSession();
+    if (session) startListening(session);
   }
 
   var listeningSession = null;
@@ -95,15 +133,12 @@
 
       totalChecked += checked;
 
-      // Count
       var cntEl = document.getElementById('cnt-' + loc.id);
       if (cntEl) cntEl.textContent = checked;
 
-      // Progress bar
       var barEl = document.getElementById('bar-' + loc.id);
       if (barEl) barEl.style.width = pct + '%';
 
-      // Card border colour
       var cardEl = document.getElementById('card-' + loc.id);
       if (cardEl) {
         cardEl.classList.remove('border-red', 'border-yellow', 'border-green');
@@ -112,14 +147,12 @@
         else                   cardEl.classList.add('border-red');
       }
 
-      // Employee list (if expanded)
       var listEl = document.getElementById('list-' + loc.id);
       if (listEl && listEl.classList.contains('open')) {
         renderLocationList(loc.id, emps, checkins, listEl);
       }
     });
 
-    // Overall totals
     var overall = totalChecked + ' / ' + totalAll;
     document.getElementById('overallCount').textContent  = overall;
     document.getElementById('overallBadge').textContent  = overall + ' Total';
@@ -155,7 +188,6 @@
     return ci.location === locationId ? 1 : 2;
   }
 
-  // Toggle expanded employee list on card click
   window.toggleCard = function (locId) {
     var listEl = document.getElementById('list-' + locId);
     if (!listEl) return;
