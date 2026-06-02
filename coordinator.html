@@ -17,12 +17,13 @@
 
 <div class="page-coordinator">
   <div class="toolbar">
-    <input type="text" class="search-box" id="searchBox" placeholder="Search name or Worker ID...">
+    <input type="text" class="search-box" id="searchBox" placeholder="Search name or Worker ID (type 2+ chars to search ALL employees)...">
     <button class="btn btn-primary" id="nfcBtn">&#x1F4F1; Start NFC Scan</button>
     <button class="btn btn-success" id="sessionBtn">&#x25B6; Start Session</button>
   </div>
   <div class="nfc-note">
     &#x26A0;&#xFE0F; NFC scanning works on Android Chrome. iPhone users: use manual check-in by searching above.
+    Searching 2+ characters will show <strong>all employees</strong> — useful for walk-ins from other locations.
   </div>
 
   <table class="employee-table">
@@ -32,6 +33,7 @@
         <th>Position</th>
         <th>Org</th>
         <th>Status</th>
+        <th>Action</th>
       </tr>
     </thead>
     <tbody id="employeeBody"></tbody>
