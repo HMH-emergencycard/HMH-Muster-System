@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HMH Muster Dashboard</title>
+  <link rel="stylesheet" href="css/muster.css">
+</head>
+<body>
+
+<!-- PIN Overlay -->
+<div id="pin-overlay">
+  <div class="pin-box">
+    <h2>Manager Access</h2>
+    <p>Enter your PIN to view the muster dashboard</p>
+    <input type="password" class="pin-input" id="pinInput" maxlength="6" placeholder="&#x2022;&#x2022;&#x2022;&#x2022;" inputmode="numeric">
+    <br><br>
+    <button class="btn btn-primary" onclick="checkPin()">Enter</button>
+    <div class="pin-error" id="pinError">Incorrect PIN. Please try again.</div>
+  </div>
+</div>
+
+<div class="header">
+  <img src="logo.png" alt="HMH Logo" onerror="this.style.display='none'">
+  <h1>HMH &mdash; Emergency Muster Dashboard</h1>
+  <div class="count-badge" id="overallBadge">0 / 0 Total</div>
+</div>
+
+<div class="page-dashboard">
+  <div class="dashboard-summary">
+    <div>
+      <div class="big-count" id="overallCount">0 / 0</div>
+      <div>Total Employees Accounted For</div>
+    </div>
+    <div>
+      <span class="active-dot" id="activeDot"></span>
+      <span id="sessionStatus">No active session</span>
+    </div>
+    <div class="meta" id="lastUpdated"></div>
+  </div>
+  <div class="dashboard-grid" id="dashboardGrid"></div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script src="js/app.js"></script>
+<script src="js/dashboard.js"></script>
+</body>
+</html>
