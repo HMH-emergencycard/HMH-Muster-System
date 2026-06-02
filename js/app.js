@@ -1,15 +1,15 @@
 // ========================================================
-// FIREBASE CONFIG — Replace with your Firebase project details
-// IT Admin: Create a free project at https://console.firebase.google.com
+// FIREBASE CONFIG
 // ========================================================
 const firebaseConfig = {
-  apiKey:        "REPLACE_WITH_YOUR_API_KEY",
-  authDomain:    "REPLACE_WITH_YOUR_AUTH_DOMAIN",
-  databaseURL:   "REPLACE_WITH_YOUR_DATABASE_URL",
-  projectId:     "REPLACE_WITH_YOUR_PROJECT_ID",
-  storageBucket: "REPLACE_WITH_YOUR_STORAGE_BUCKET",
-  messagingSenderId: "REPLACE_WITH_YOUR_MESSAGING_SENDER_ID",
-  appId:         "REPLACE_WITH_YOUR_APP_ID"
+  apiKey:            "AIzaSyDkVUs7OWRE4VNG6zh5mDRf_m118DVj30I",
+  authDomain:        "hmh-muster-check-in.firebaseapp.com",
+  databaseURL:       "https://hmh-muster-check-in-default-rtdb.firebaseio.com",
+  projectId:         "hmh-muster-check-in",
+  storageBucket:     "hmh-muster-check-in.firebasestorage.app",
+  messagingSenderId: "336141683682",
+  appId:             "1:336141683682:web:9546744a13fe9c6e7607bb",
+  measurementId:     "G-RMTMSN0PDZ"
 };
 
 // Initialise Firebase (v9 compat)
@@ -68,7 +68,7 @@ const EMPLOYEES = [
   { workerId:"EMP007", name:"Grace Kim",         position:"Engineer I",             supervisoryOrg:"Engineering",  phone:"281-555-0007", assignedLocation:"ML2" },
   { workerId:"EMP008", name:"Henry Brown",       position:"Maintenance Tech",       supervisoryOrg:"Maintenance",  phone:"281-555-0008", assignedLocation:"ML2" },
   { workerId:"EMP009", name:"Iris Chan",         position:"Administrative Asst",    supervisoryOrg:"Admin",        phone:"281-555-0009", assignedLocation:"ML2" },
-  { workerId:"EMP010", name:"James Wilson",      position:"Planner",               supervisoryOrg:"Planning",     phone:"281-555-0010", assignedLocation:"ML2" },
+  { workerId:"EMP010", name:"James Wilson",      position:"Planner",                supervisoryOrg:"Planning",     phone:"281-555-0010", assignedLocation:"ML2" },
   // ML 3
   { workerId:"EMP011", name:"Karen White",       position:"Process Tech",           supervisoryOrg:"Operations",   phone:"281-555-0011", assignedLocation:"ML3" },
   { workerId:"EMP012", name:"Luis Gomez",        position:"Electrician",            supervisoryOrg:"Maintenance",  phone:"281-555-0012", assignedLocation:"ML3" },
@@ -79,7 +79,7 @@ const EMPLOYEES = [
   { workerId:"EMP016", name:"Paul Adams",        position:"Operator II",            supervisoryOrg:"Operations",   phone:"281-555-0016", assignedLocation:"ML5-1" },
   { workerId:"EMP017", name:"Quinn Baker",       position:"Instrument Tech",        supervisoryOrg:"Instrumentation",phone:"281-555-0017", assignedLocation:"ML5-1" },
   { workerId:"EMP018", name:"Rachel Green",      position:"Engineer II",            supervisoryOrg:"Engineering",  phone:"281-555-0018", assignedLocation:"ML5-1" },
-  { workerId:"EMP019", name:"Steve Hall",        position:"Welder",                supervisoryOrg:"Maintenance",  phone:"281-555-0019", assignedLocation:"ML5-1" },
+  { workerId:"EMP019", name:"Steve Hall",        position:"Welder",                 supervisoryOrg:"Maintenance",  phone:"281-555-0019", assignedLocation:"ML5-1" },
   { workerId:"EMP020", name:"Tina Young",        position:"Lab Technician",         supervisoryOrg:"Quality",      phone:"281-555-0020", assignedLocation:"ML5-1" },
   // ML 5-2
   { workerId:"EMP021", name:"Uma Patel",         position:"Operator (Night)",       supervisoryOrg:"Operations",   phone:"281-555-0021", assignedLocation:"ML5-2" },
@@ -90,7 +90,7 @@ const EMPLOYEES = [
   // ML 6
   { workerId:"EMP026", name:"Zack Moore",        position:"Process Engineer",       supervisoryOrg:"Engineering",  phone:"281-555-0026", assignedLocation:"ML6" },
   { workerId:"EMP027", name:"Amy Nelson",        position:"Operator I",             supervisoryOrg:"Operations",   phone:"281-555-0027", assignedLocation:"ML6" },
-  { workerId:"EMP028", name:"Ben Carter",        position:"Planner",               supervisoryOrg:"Planning",     phone:"281-555-0028", assignedLocation:"ML6" },
+  { workerId:"EMP028", name:"Ben Carter",        position:"Planner",                supervisoryOrg:"Planning",     phone:"281-555-0028", assignedLocation:"ML6" },
   { workerId:"EMP029", name:"Chloe Mitchell",    position:"Admin Coordinator",      supervisoryOrg:"Admin",        phone:"281-555-0029", assignedLocation:"ML6" },
   { workerId:"EMP030", name:"Derek Perez",       position:"Maintenance Tech",       supervisoryOrg:"Maintenance",  phone:"281-555-0030", assignedLocation:"ML6" },
   // ML 8
@@ -116,7 +116,7 @@ const EMPLOYEES = [
   { workerId:"EMP047", name:"Umar Stone",        position:"Technician I",           supervisoryOrg:"Maintenance",  phone:"281-555-0047", assignedLocation:"ML12" },
   { workerId:"EMP048", name:"Vera Simmons",      position:"Engineer II",            supervisoryOrg:"Engineering",  phone:"281-555-0048", assignedLocation:"ML12" },
   { workerId:"EMP049", name:"Will Foster",       position:"Operator II",            supervisoryOrg:"Operations",   phone:"281-555-0049", assignedLocation:"ML12" },
-  { workerId:"EMP050", name:"Xena Hayes",        position:"Planner",               supervisoryOrg:"Planning",     phone:"281-555-0050", assignedLocation:"ML12" },
+  { workerId:"EMP050", name:"Xena Hayes",        position:"Planner",                supervisoryOrg:"Planning",     phone:"281-555-0050", assignedLocation:"ML12" },
   // ML 13-1
   { workerId:"EMP051", name:"Yusuf Holmes",      position:"Process Tech",           supervisoryOrg:"Operations",   phone:"281-555-0051", assignedLocation:"ML13-1" },
   { workerId:"EMP052", name:"Zoe Chapman",       position:"HSE Rep",                supervisoryOrg:"Safety",       phone:"281-555-0052", assignedLocation:"ML13-1" },
@@ -165,9 +165,9 @@ function getEmployeeById(workerId) {
 // ── Check-in helper ──
 function checkInEmployee(workerId, checkedInAtLocation) {
   const session = getActiveSession();
-  if (!session) { alert('No active session. Please start a session first.'); return; }
+  if (!session) { alert('No active session. Please start a session first.'); return Promise.reject(new Error('No active session')); }
   const emp = getEmployeeById(workerId);
-  if (!emp) { console.warn('Employee not found:', workerId); return; }
+  if (!emp) { console.warn('Employee not found:', workerId); return Promise.reject(new Error('Employee not found')); }
   return db.ref(`sessions/${session}/checkins/${workerId}`).set({
     name:             emp.name,
     position:         emp.position,
