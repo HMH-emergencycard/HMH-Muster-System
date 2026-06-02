@@ -9,7 +9,10 @@
     const val = document.getElementById('pinInput').value;
     if (val === CORRECT_PIN) {
       document.getElementById('pin-overlay').style.display = 'none';
-      initDashboard();
+      // Wait for roster to load from Firebase before building the dashboard
+      onRosterReady(function () {
+        initDashboard();
+      });
     } else {
       document.getElementById('pinError').style.display = 'block';
       document.getElementById('pinInput').value = '';
@@ -46,6 +49,10 @@
 
       grid.appendChild(card);
     });
+
+    // Update overall count now that EMPLOYEES is populated
+    document.getElementById('overallCount').textContent = '0 / ' + EMPLOYEES.length;
+    document.getElementById('overallBadge').textContent = '0 / ' + EMPLOYEES.length + ' Total';
 
     // ── Session Start / Stop / Reset ──
     var sessionBtn = document.getElementById('sessionBtn');
@@ -141,7 +148,6 @@
         ]);
       });
 
-      // Build CSV string
       var csv = rows.map(function (row) {
         return row.map(function (cell) {
           var s = String(cell).replace(/"/g, '""');
@@ -149,7 +155,6 @@
         }).join(',');
       }).join('\n');
 
-      // Add report header
       var header = '"HMH Emergency Muster Report"\n"Generated: ' + dateStr + '"\n\n';
       var blob   = new Blob([header + csv], { type: 'text/csv;charset=utf-8;' });
       var url    = URL.createObjectURL(blob);
