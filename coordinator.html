@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Muster Coordinator</title>
+  <link rel="stylesheet" href="css/muster.css">
+</head>
+<body>
+
+<div class="header" id="pageHeader">
+  <img src="logo.png" alt="HMH Logo" onerror="this.style.display='none'">
+  <h1 id="locationTitle">Loading...</h1>
+  <div class="count-badge" id="countBadge">0 / 0</div>
+</div>
+<div class="coordinators" id="coordinatorNames"></div>
+
+<div class="page-coordinator">
+  <div class="toolbar">
+    <input type="text" class="search-box" id="searchBox" placeholder="Search name or Worker ID...">
+    <button class="btn btn-primary" id="nfcBtn">&#x1F4F1; Start NFC Scan</button>
+    <button class="btn btn-success" id="sessionBtn">&#x25B6; Start Session</button>
+  </div>
+  <div class="nfc-note">
+    &#x26A0;&#xFE0F; NFC scanning works on Android Chrome. iPhone users: use manual check-in by searching above.
+  </div>
+
+  <table class="employee-table">
+    <thead>
+      <tr>
+        <th>Worker</th>
+        <th>Position</th>
+        <th>Org</th>
+        <th>Status</th>
+      </tr>
+    </thead>
+    <tbody id="employeeBody"></tbody>
+  </table>
+</div>
+
+<div id="toast"></div>
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script src="js/app.js"></script>
+<script src="js/coordinator.js"></script>
+</body>
+</html>
