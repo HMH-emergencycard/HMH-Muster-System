@@ -2,7 +2,6 @@
 
   // ========================================================
   // PIN Protection
-  // TODO: Replace PIN and add proper manager auth when access list is confirmed
   // ========================================================
   const CORRECT_PIN = '1234';
 
@@ -17,7 +16,6 @@
     }
   };
 
-  // Allow Enter key on PIN input
   document.getElementById('pinInput').addEventListener('keydown', function (e) {
     if (e.key === 'Enter') window.checkPin();
   });
@@ -25,7 +23,6 @@
   function initDashboard() {
     const grid = document.getElementById('dashboardGrid');
 
-    // Build a card per location
     MUSTER_LOCATIONS.forEach(function (loc) {
       const card = document.createElement('div');
       card.className = 'dash-card border-red';
@@ -47,45 +44,65 @@
       grid.appendChild(card);
     });
 
-    // ── Session Start / Stop ──
+    // ── Session Start / Stop / Reset ──
     var sessionBtn = document.getElementById('sessionBtn');
+    var resetBtn   = document.getElementById('resetBtn');
 
     function updateSessionBtn(active) {
       if (active) {
-        sessionBtn.innerHTML  = '&#x23F9; Stop Session';
-        sessionBtn.className  = 'btn btn-danger';
+        sessionBtn.innerHTML = '&#x23F9; Stop Session';
+        sessionBtn.className = 'btn btn-danger';
+        resetBtn.style.display = 'none';
       } else {
-        sessionBtn.innerHTML  = '&#x25B6; Start Session';
-        sessionBtn.className  = 'btn btn-success';
+        sessionBtn.innerHTML = '&#x25B6; Start Session';
+        sessionBtn.className = 'btn btn-success';
       }
     }
 
-    // Reflect current state on load
     updateSessionBtn(!!getActiveSession());
 
     sessionBtn.addEventListener('click', function () {
       var current = getActiveSession();
       if (!current) {
-        // Start new session
+        // Start
         var id = startNewSession();
         updateSessionBtn(true);
+        resetBtn.style.display = 'none';
         document.getElementById('activeDot').classList.add('active');
         document.getElementById('sessionStatus').textContent = 'Session started at ' + new Date().toLocaleTimeString();
         startListening(id);
         showToast('Session started \u2705');
       } else {
-        // Stop session
+        // Stop
         db.ref('sessions/' + current + '/active').set(false);
         db.ref('sessions/' + current + '/endedAt').set(new Date().toISOString());
         sessionStorage.removeItem('musterSession');
         updateSessionBtn(false);
         document.getElementById('activeDot').classList.remove('active');
         document.getElementById('sessionStatus').textContent = 'No active session';
+        // Show reset button after stopping
+        resetBtn.style.display = 'inline-block';
         showToast('Session stopped \u23F9');
       }
     });
 
-    // Listen for active session in Firebase
+    // Reset button — clears all check-in data for the last session
+    resetBtn.addEventListener('click', function () {
+      if (!confirm('Reset all check-in data? This cannot be undone.')) return;
+      // Clear all sessions data
+      db.ref('sessions').remove().then(function () {
+        sessionStorage.removeItem('musterSession');
+        listeningSession = null;
+        updateAllCards({});
+        resetBtn.style.display = 'none';
+        document.getElementById('overallCount').textContent = '0 / ' + EMPLOYEES.length;
+        document.getElementById('overallBadge').textContent = '0 / ' + EMPLOYEES.length + ' Total';
+        document.getElementById('lastUpdated').textContent  = '';
+        showToast('Check-in data reset \u2705');
+      });
+    });
+
+    // Watch Firebase for active session
     db.ref('sessions').orderByChild('active').equalTo(true).limitToLast(1)
       .on('value', function (snap) {
         var val = snap.val();
@@ -104,7 +121,6 @@
         }
       });
 
-    // Listen for current session if already active
     var session = getActiveSession();
     if (session) startListening(session);
   }
@@ -142,9 +158,9 @@
       var cardEl = document.getElementById('card-' + loc.id);
       if (cardEl) {
         cardEl.classList.remove('border-red', 'border-yellow', 'border-green');
-        if (pct === 100)       cardEl.classList.add('border-green');
-        else if (pct >= 50)    cardEl.classList.add('border-yellow');
-        else                   cardEl.classList.add('border-red');
+        if (pct === 100)    cardEl.classList.add('border-green');
+        else if (pct >= 50) cardEl.classList.add('border-yellow');
+        else                cardEl.classList.add('border-red');
       }
 
       var listEl = document.getElementById('list-' + loc.id);
@@ -154,8 +170,8 @@
     });
 
     var overall = totalChecked + ' / ' + totalAll;
-    document.getElementById('overallCount').textContent  = overall;
-    document.getElementById('overallBadge').textContent  = overall + ' Total';
+    document.getElementById('overallCount').textContent = overall;
+    document.getElementById('overallBadge').textContent = overall + ' Total';
   }
 
   function renderLocationList(locationId, emps, checkins, container) {
