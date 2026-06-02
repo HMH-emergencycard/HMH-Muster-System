@@ -20,6 +20,9 @@
     if (e.key === 'Enter') window.checkPin();
   });
 
+  // Holds latest checkins so export always has current data
+  var latestCheckins = {};
+
   function initDashboard() {
     const grid = document.getElementById('dashboardGrid');
 
@@ -47,11 +50,12 @@
     // ── Session Start / Stop / Reset ──
     var sessionBtn = document.getElementById('sessionBtn');
     var resetBtn   = document.getElementById('resetBtn');
+    var exportBtn  = document.getElementById('exportBtn');
 
     function updateSessionBtn(active) {
       if (active) {
-        sessionBtn.innerHTML = '&#x23F9; Stop Session';
-        sessionBtn.className = 'btn btn-danger';
+        sessionBtn.innerHTML   = '&#x23F9; Stop Session';
+        sessionBtn.className   = 'btn btn-danger';
         resetBtn.style.display = 'none';
       } else {
         sessionBtn.innerHTML = '&#x25B6; Start Session';
@@ -64,7 +68,6 @@
     sessionBtn.addEventListener('click', function () {
       var current = getActiveSession();
       if (!current) {
-        // Start
         var id = startNewSession();
         updateSessionBtn(true);
         resetBtn.style.display = 'none';
@@ -73,26 +76,24 @@
         startListening(id);
         showToast('Session started \u2705');
       } else {
-        // Stop
         db.ref('sessions/' + current + '/active').set(false);
         db.ref('sessions/' + current + '/endedAt').set(new Date().toISOString());
         sessionStorage.removeItem('musterSession');
         updateSessionBtn(false);
         document.getElementById('activeDot').classList.remove('active');
         document.getElementById('sessionStatus').textContent = 'No active session';
-        // Show reset button after stopping
         resetBtn.style.display = 'inline-block';
         showToast('Session stopped \u23F9');
       }
     });
 
-    // Reset button — clears all check-in data for the last session
+    // Reset button
     resetBtn.addEventListener('click', function () {
       if (!confirm('Reset all check-in data? This cannot be undone.')) return;
-      // Clear all sessions data
       db.ref('sessions').remove().then(function () {
         sessionStorage.removeItem('musterSession');
         listeningSession = null;
+        latestCheckins   = {};
         updateAllCards({});
         resetBtn.style.display = 'none';
         document.getElementById('overallCount').textContent = '0 / ' + EMPLOYEES.length;
@@ -100,6 +101,65 @@
         document.getElementById('lastUpdated').textContent  = '';
         showToast('Check-in data reset \u2705');
       });
+    });
+
+    // ── Export to CSV ──
+    exportBtn.addEventListener('click', function () {
+      var checkins = latestCheckins;
+      var now      = new Date();
+      var dateStr  = now.toLocaleDateString() + ' ' + now.toLocaleTimeString();
+
+      var rows = [
+        ['Name', 'Worker ID', 'Position', 'Supervisory Org', 'Assigned Location', 'Status', 'Checked In At', 'Check-In Time']
+      ];
+
+      EMPLOYEES.forEach(function (emp) {
+        var ci            = checkins[emp.workerId];
+        var assignedLabel = getLocation(emp.assignedLocation) ? getLocation(emp.assignedLocation).label : emp.assignedLocation;
+        var status, checkedAtLabel, checkTime;
+
+        if (!ci) {
+          status         = 'Not Checked In';
+          checkedAtLabel = '';
+          checkTime      = '';
+        } else {
+          var ciLoc      = getLocation(ci.location);
+          checkedAtLabel = ciLoc ? ciLoc.label : ci.location;
+          checkTime      = ci.timestamp ? new Date(ci.timestamp).toLocaleTimeString() : '';
+          status         = ci.location === emp.assignedLocation ? 'Checked In' : 'Checked In (Walk-In)';
+        }
+
+        rows.push([
+          emp.name,
+          emp.workerId,
+          emp.position,
+          emp.supervisoryOrg,
+          assignedLabel,
+          status,
+          checkedAtLabel,
+          checkTime
+        ]);
+      });
+
+      // Build CSV string
+      var csv = rows.map(function (row) {
+        return row.map(function (cell) {
+          var s = String(cell).replace(/"/g, '""');
+          return '"' + s + '"';
+        }).join(',');
+      }).join('\n');
+
+      // Add report header
+      var header = '"HMH Emergency Muster Report"\n"Generated: ' + dateStr + '"\n\n';
+      var blob   = new Blob([header + csv], { type: 'text/csv;charset=utf-8;' });
+      var url    = URL.createObjectURL(blob);
+      var a      = document.createElement('a');
+      var fname  = 'muster-report-' + now.toISOString().slice(0, 10) + '.csv';
+      a.href     = url;
+      a.download = fname;
+      a.click();
+      URL.revokeObjectURL(url);
+      showToast('CSV downloaded \u2705');
     });
 
     // Watch Firebase for active session
@@ -131,7 +191,8 @@
     listeningSession = sessionId;
 
     db.ref('sessions/' + sessionId + '/checkins').on('value', function (snap) {
-      var checkins = snap.val() || {};
+      var checkins   = snap.val() || {};
+      latestCheckins = checkins;
       updateAllCards(checkins);
       document.getElementById('lastUpdated').textContent =
         'Last updated: ' + new Date().toLocaleTimeString();
