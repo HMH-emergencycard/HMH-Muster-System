@@ -31,7 +31,7 @@
   }
   checkSessionBanner();
 
-  // Re-check session banner every 5 seconds (manager may start one from dashboard)
+  // Re-check session banner every 5 seconds
   setInterval(checkSessionBanner, 5000);
 
   // Also watch Firebase for active session
@@ -162,7 +162,7 @@
 
     if (pool.length === 0) {
       var tr = document.createElement('tr');
-      tr.innerHTML = '<td colspan="5" style="padding:16px;text-align:center;color:#888;">No employees found</td>';
+      tr.innerHTML = '<td colspan="3" style="padding:16px;text-align:center;color:#888;">No employees found</td>';
       tbody.appendChild(tr);
       return;
     }
@@ -196,9 +196,7 @@
       tr.id        = 'row-' + emp.workerId;
       tr.className = 'employee-row ' + statusClass;
       tr.innerHTML =
-        '<td><strong>' + emp.name + '</strong>' + assignedLbl + '<br><small>' + emp.workerId + '</small></td>' +
-        '<td>' + emp.position + '</td>' +
-        '<td>' + emp.supervisoryOrg + '</td>' +
+        '<td><strong>' + emp.name + '</strong>' + assignedLbl + '</td>' +
         '<td>' + pillHtml + '</td>' +
         '<td>' + actionBtn + '</td>';
 
