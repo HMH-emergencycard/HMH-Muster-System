@@ -62,14 +62,20 @@ body {
   font-weight: bold;
   transition: background 0.2s;
 }
-.btn-primary { background: #00AEEF; color: #fff; }
+.btn-primary   { background: #00AEEF; color: #fff; }
 .btn-primary:hover { background: #0095cc; }
-.btn-success { background: #28a745; color: #fff; }
+.btn-success   { background: #28a745; color: #fff; }
 .btn-success:hover { background: #1e7e34; }
-.btn-danger  { background: #dc3545; color: #fff; }
+.btn-danger    { background: #dc3545; color: #fff; }
 .btn-danger:hover  { background: #b02a37; }
 .btn-secondary { background: #6c757d; color: #fff; }
 .btn-secondary:hover { background: #545b62; }
+.btn-warning   { background: #ffc107; color: #212529; }
+.btn-warning:hover { background: #e0a800; }
+
+/* Off-Site button — purple */
+.btn-offsite { background: #7b2fbe; color: #fff; }
+.btn-offsite:hover { background: #5e1f96; }
 
 /* ── Index page – location grid ── */
 .page-index {
@@ -131,7 +137,7 @@ body {
 
 /* ── Coordinator page ── */
 .page-coordinator {
-  max-width: 800px;
+  max-width: 860px;
   margin: 0 auto;
   padding-bottom: 40px;
 }
@@ -160,6 +166,15 @@ body {
   border-bottom: 1px solid #ffe082;
 }
 
+/* No-session banner */
+.no-session-banner {
+  background: #fff8e1;
+  border-bottom: 1px solid #ffe082;
+  padding: 10px 16px;
+  font-size: 0.88rem;
+  color: #795548;
+}
+
 /* ── Employee rows ── */
 .employee-table { width: 100%; border-collapse: collapse; }
 .employee-table th {
@@ -175,7 +190,6 @@ body {
 .employee-row {
   min-height: 48px;
   border-bottom: 1px solid #eee;
-  cursor: pointer;
   transition: background 0.3s ease;
 }
 .employee-row td {
@@ -185,11 +199,13 @@ body {
 }
 .employee-row:hover { filter: brightness(0.95); }
 
-/* Status colours */
+/* Status row colours */
 .status-unchecked { background: #fdecea; }
 .status-checked   { background: #e8f5e9; }
 .status-elsewhere { background: #e3f0ff; }
+.status-offsite   { background: #f3e5f5; }
 
+/* Status pills */
 .status-pill {
   display: inline-block;
   padding: 3px 10px;
@@ -200,6 +216,7 @@ body {
 .pill-red    { background: #dc3545; color: #fff; }
 .pill-green  { background: #28a745; color: #fff; }
 .pill-blue   { background: #007bff; color: #fff; }
+.pill-purple { background: #7b2fbe; color: #fff; }
 
 /* Flash animation */
 @keyframes flashGreen {
@@ -338,6 +355,7 @@ body {
 .dash-emp-row.status-unchecked { background: #fdecea; }
 .dash-emp-row.status-checked   { background: #e8f5e9; }
 .dash-emp-row.status-elsewhere { background: #e3f0ff; }
+.dash-emp-row.status-offsite   { background: #f3e5f5; }
 
 /* ── Checkin confirmation page ── */
 .checkin-confirm {
@@ -390,7 +408,8 @@ body {
 .pin-error { color: #dc3545; font-size: 0.85rem; margin-top: 8px; display: none; }
 
 /* Responsive tweaks */
-@media (max-width: 480px) {
+@media (max-width: 600px) {
   .header h1 { font-size: 1rem; }
-  .employee-table th, .employee-table td { font-size: 0.78rem; padding: 8px 6px; }
+  .employee-table th, .employee-table td { font-size: 0.78rem; padding: 8px 4px; }
+  .btn { font-size: 0.82rem; padding: 7px 10px; }
 }
