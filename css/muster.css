@@ -72,10 +72,16 @@ body {
 .btn-secondary:hover { background: #545b62; }
 .btn-warning   { background: #ffc107; color: #212529; }
 .btn-warning:hover { background: #e0a800; }
+.btn-back { background: #eee; color: #333; text-decoration: none; }
+.btn-back:hover { background: #ddd; }
 
 /* Off-Site button — purple */
 .btn-offsite { background: #7b2fbe; color: #fff; }
 .btn-offsite:hover { background: #5e1f96; }
+
+/* Contractor button — subtle orange */
+.btn-contractor { background: #fff3e0; color: #e65100; border: 1px solid #ffcc80; }
+.btn-contractor:hover { background: #ffe0b2; }
 
 /* ── Index page – location grid ── */
 .page-index {
@@ -158,13 +164,26 @@ body {
   border-radius: 6px;
   font-size: 0.95rem;
 }
-.nfc-note {
-  font-size: 0.78rem;
-  color: #888;
-  padding: 6px 16px;
-  background: #fffde7;
-  border-bottom: 1px solid #ffe082;
+
+/* Contractor inline form */
+.contractor-form {
+  display: flex;
+  gap: 8px;
+  padding: 10px 16px;
+  background: #fff8f0;
+  border-bottom: 1px solid #ffcc80;
+  align-items: center;
+  flex-wrap: wrap;
 }
+.contractor-input {
+  padding: 8px 12px;
+  border: 1px solid #ffb74d;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  flex: 1;
+  min-width: 140px;
+}
+.contractor-input:focus { outline: none; border-color: #e65100; }
 
 /* No-session banner */
 .no-session-banner {
@@ -200,10 +219,11 @@ body {
 .employee-row:hover { filter: brightness(0.95); }
 
 /* Status row colours */
-.status-unchecked { background: #fdecea; }
-.status-checked   { background: #e8f5e9; }
-.status-elsewhere { background: #e3f0ff; }
-.status-offsite   { background: #f3e5f5; }
+.status-unchecked  { background: #fdecea; }
+.status-checked    { background: #e8f5e9; }
+.status-elsewhere  { background: #e3f0ff; }
+.status-offsite    { background: #f3e5f5; }
+.status-contractor { background: #fff3e0; }
 
 /* Status pills */
 .status-pill {
@@ -217,6 +237,7 @@ body {
 .pill-green  { background: #28a745; color: #fff; }
 .pill-blue   { background: #007bff; color: #fff; }
 .pill-purple { background: #7b2fbe; color: #fff; }
+.pill-orange { background: #e65100; color: #fff; }
 
 /* Flash animation */
 @keyframes flashGreen {
@@ -356,6 +377,38 @@ body {
 .dash-emp-row.status-checked   { background: #e8f5e9; }
 .dash-emp-row.status-elsewhere { background: #e3f0ff; }
 .dash-emp-row.status-offsite   { background: #f3e5f5; }
+
+/* ── Contractor Panel (dashboard) ── */
+.contractor-panel {
+  margin-top: 24px;
+  background: #fff;
+  border-radius: 8px;
+  border-left: 5px solid #e65100;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+  overflow: hidden;
+}
+.contractor-panel-header {
+  background: #fff3e0;
+  padding: 12px 16px;
+  font-weight: bold;
+  font-size: 0.95rem;
+  color: #e65100;
+  border-bottom: 1px solid #ffcc80;
+}
+.contractor-panel-list { padding: 8px 0; }
+.contractor-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 16px;
+  border-bottom: 1px solid #f0f0f0;
+  font-size: 0.85rem;
+  flex-wrap: wrap;
+}
+.contractor-row:last-child { border-bottom: none; }
+.contractor-name    { flex: 2; min-width: 120px; }
+.contractor-company { flex: 2; min-width: 120px; color: #666; }
+.contractor-location { flex: 1; min-width: 80px; text-align: right; }
 
 /* ── Checkin confirmation page ── */
 .checkin-confirm {
