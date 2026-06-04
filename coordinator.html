@@ -23,6 +23,15 @@
     <a href="index.html" class="btn btn-back">&larr; Back</a>
     <input type="text" class="search-box" id="searchBox" placeholder="Search name (type 2+ chars to search ALL employees)...">
     <button class="btn btn-primary" id="nfcBtn">&#x1F4F1; Start NFC Scan</button>
+    <button class="btn btn-contractor" id="addContractorBtn">&#x1F477; + Contractor</button>
+  </div>
+
+  <!-- Contractor form (hidden by default) -->
+  <div class="contractor-form" id="contractorForm" style="display:none;">
+    <input type="text" id="contractorName" placeholder="Contractor Name" class="contractor-input">
+    <input type="text" id="contractorCompany" placeholder="Company" class="contractor-input">
+    <button class="btn btn-success" id="contractorSubmit" style="padding:8px 16px;">&#x2705; Check In</button>
+    <button class="btn btn-secondary" id="contractorCancel" style="padding:8px 16px;">Cancel</button>
   </div>
 
   <div class="no-session-banner" id="noSessionBanner" style="display:none">

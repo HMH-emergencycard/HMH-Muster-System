@@ -50,7 +50,14 @@
       <a href="index.html" class="btn btn-back">&larr; Back to Locations</a>
     </div>
   </div>
+
   <div class="dashboard-grid" id="dashboardGrid"></div>
+
+  <!-- Contractor Panel (hidden until contractors check in) -->
+  <div class="contractor-panel" id="contractorPanel" style="display:none;">
+    <div class="contractor-panel-header">&#x1F477; Contractors On-Site</div>
+    <div class="contractor-panel-list" id="contractorList"></div>
+  </div>
 </div>
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>

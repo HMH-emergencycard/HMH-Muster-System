@@ -9,7 +9,6 @@
     const val = document.getElementById('pinInput').value;
     if (val === CORRECT_PIN) {
       document.getElementById('pin-overlay').style.display = 'none';
-      // Wait for roster to load from Firebase before building the dashboard
       onRosterReady(function () {
         initDashboard();
       });
@@ -23,7 +22,6 @@
     if (e.key === 'Enter') window.checkPin();
   });
 
-  // Holds latest checkins so export always has current data
   var latestCheckins = {};
 
   function initDashboard() {
@@ -50,7 +48,6 @@
       grid.appendChild(card);
     });
 
-    // Update overall count now that EMPLOYEES is populated
     document.getElementById('overallCount').textContent = '0 / ' + EMPLOYEES.length;
     document.getElementById('overallBadge').textContent = '0 / ' + EMPLOYEES.length + ' Total';
 
@@ -94,7 +91,6 @@
       }
     });
 
-    // Reset button
     resetBtn.addEventListener('click', function () {
       if (!confirm('Reset all check-in data? This cannot be undone.')) return;
       db.ref('sessions').remove().then(function () {
@@ -106,6 +102,7 @@
         document.getElementById('overallCount').textContent = '0 / ' + EMPLOYEES.length;
         document.getElementById('overallBadge').textContent = '0 / ' + EMPLOYEES.length + ' Total';
         document.getElementById('lastUpdated').textContent  = '';
+        renderContractorPanel({});
         showToast('Check-in data reset \u2705');
       });
     });
@@ -117,51 +114,39 @@
       var dateStr  = now.toLocaleDateString() + ' ' + now.toLocaleTimeString();
 
       var rows = [
-        ['Name', 'Worker ID', 'Position', 'Supervisory Org', 'Assigned Location', 'Status', 'Checked In At', 'Check-In Time']
+        ['Name', 'Worker ID / Type', 'Position / Company', 'Supervisory Org', 'Assigned Location', 'Status', 'Checked In At', 'Check-In Time']
       ];
 
       EMPLOYEES.forEach(function (emp) {
         var ci            = checkins[emp.workerId];
         var assignedLabel = getLocation(emp.assignedLocation) ? getLocation(emp.assignedLocation).label : emp.assignedLocation;
         var status, checkedAtLabel, checkTime;
-
         if (!ci) {
-          status         = 'Not Checked In';
-          checkedAtLabel = '';
-          checkTime      = '';
+          status = 'Not Checked In'; checkedAtLabel = ''; checkTime = '';
         } else {
           var ciLoc      = getLocation(ci.location);
           checkedAtLabel = ciLoc ? ciLoc.label : ci.location;
-          checkTime      = ci.timestamp ? new Date(ci.timestamp).toLocaleTimeString() : '';
-          status         = ci.location === emp.assignedLocation ? 'Checked In' : 'Checked In (Walk-In)';
+          checkTime      = ci.checkedInAt ? new Date(ci.checkedInAt).toLocaleTimeString() : '';
+          status         = ci.status === 'offsite' ? 'Off-Site' : (ci.location === emp.assignedLocation ? 'Checked In' : 'Checked In (Walk-In)');
         }
-
-        rows.push([
-          emp.name,
-          emp.workerId,
-          emp.position,
-          emp.supervisoryOrg,
-          assignedLabel,
-          status,
-          checkedAtLabel,
-          checkTime
-        ]);
+        rows.push([emp.name, emp.workerId, emp.position, emp.supervisoryOrg, assignedLabel, status, checkedAtLabel, checkTime]);
       });
 
-      var csv = rows.map(function (row) {
-        return row.map(function (cell) {
-          var s = String(cell).replace(/"/g, '""');
-          return '"' + s + '"';
-        }).join(',');
-      }).join('\n');
+      // Add contractors
+      Object.entries(checkins).forEach(function (entry) {
+        var key = entry[0]; var ci = entry[1];
+        if (!ci.isContractor) return;
+        var locLabel = getLocation(ci.location) ? getLocation(ci.location).label : ci.location;
+        rows.push([ci.name, 'CONTRACTOR', ci.company || '', '', locLabel, 'Contractor', locLabel, ci.checkedInAt ? new Date(ci.checkedInAt).toLocaleTimeString() : '']);
+      });
 
+      var csv    = rows.map(function (row) { return row.map(function (cell) { var s = String(cell).replace(/"/g, '""'); return '"' + s + '"'; }).join(','); }).join('\n');
       var header = '"HMH Emergency Muster Report"\n"Generated: ' + dateStr + '"\n\n';
       var blob   = new Blob([header + csv], { type: 'text/csv;charset=utf-8;' });
       var url    = URL.createObjectURL(blob);
       var a      = document.createElement('a');
-      var fname  = 'muster-report-' + now.toISOString().slice(0, 10) + '.csv';
       a.href     = url;
-      a.download = fname;
+      a.download = 'muster-report-' + now.toISOString().slice(0, 10) + '.csv';
       a.click();
       URL.revokeObjectURL(url);
       showToast('CSV downloaded \u2705');
@@ -194,13 +179,12 @@
   function startListening(sessionId) {
     if (listeningSession === sessionId) return;
     listeningSession = sessionId;
-
     db.ref('sessions/' + sessionId + '/checkins').on('value', function (snap) {
       var checkins   = snap.val() || {};
       latestCheckins = checkins;
       updateAllCards(checkins);
-      document.getElementById('lastUpdated').textContent =
-        'Last updated: ' + new Date().toLocaleTimeString();
+      renderContractorPanel(checkins);
+      document.getElementById('lastUpdated').textContent = 'Last updated: ' + new Date().toLocaleTimeString();
     });
   }
 
@@ -212,7 +196,6 @@
       var emps    = getEmployeesByLocation(loc.id);
       var checked = emps.filter(function (e) { return checkins[e.workerId]; }).length;
       var pct     = emps.length ? Math.round((checked / emps.length) * 100) : 0;
-
       totalChecked += checked;
 
       var cntEl = document.getElementById('cnt-' + loc.id);
@@ -240,6 +223,35 @@
     document.getElementById('overallBadge').textContent = overall + ' Total';
   }
 
+  // ── Contractor Panel ──
+  function renderContractorPanel(checkins) {
+    var panel = document.getElementById('contractorPanel');
+    var list  = document.getElementById('contractorList');
+    if (!panel || !list) return;
+
+    var contractors = Object.entries(checkins).filter(function (e) { return e[1].isContractor; });
+
+    if (contractors.length === 0) {
+      panel.style.display = 'none';
+      return;
+    }
+
+    panel.style.display = 'block';
+    list.innerHTML = '';
+
+    contractors.forEach(function (entry) {
+      var ci      = entry[1];
+      var locLabel = getLocation(ci.location) ? getLocation(ci.location).label : ci.location;
+      var row = document.createElement('div');
+      row.className = 'contractor-row';
+      row.innerHTML =
+        '<span class="contractor-name">&#x1F477; <strong>' + ci.name + '</strong></span>' +
+        '<span class="contractor-company">' + (ci.company || 'Unknown Company') + '</span>' +
+        '<span class="contractor-location"><span class="status-pill pill-orange" style="font-size:0.75rem">' + locLabel + '</span></span>';
+      list.appendChild(row);
+    });
+  }
+
   function renderLocationList(locationId, emps, checkins, container) {
     container.innerHTML = '';
     var sorted = emps.slice().sort(function (a, b) {
@@ -247,13 +259,15 @@
     });
     sorted.forEach(function (emp) {
       var ci     = checkins[emp.workerId];
-      var status = ci ? (ci.location === locationId ? 'checked' : 'elsewhere') : 'unchecked';
+      var status = !ci ? 'unchecked' : (ci.status === 'offsite' ? 'offsite' : (ci.location === locationId ? 'checked' : 'elsewhere'));
       var extra  = '';
       if (status === 'elsewhere') {
         var ol = getLocation(ci.location);
         extra  = ' <span class="status-pill pill-blue" style="font-size:0.7rem">At ' + (ol ? ol.label : ci.location) + '</span>';
       } else if (status === 'checked') {
         extra = ' <span class="status-pill pill-green" style="font-size:0.7rem">&#x2705;</span>';
+      } else if (status === 'offsite') {
+        extra = ' <span class="status-pill pill-purple" style="font-size:0.7rem">&#x1F3E0; Off-Site</span>';
       } else {
         extra = ' <span class="status-pill pill-red" style="font-size:0.7rem">Not In</span>';
       }
@@ -267,7 +281,8 @@
   function statusOrder(emp, checkins, locationId) {
     var ci = checkins[emp.workerId];
     if (!ci) return 0;
-    return ci.location === locationId ? 1 : 2;
+    if (ci.status === 'offsite') return 2;
+    return ci.location === locationId ? 3 : 1;
   }
 
   window.toggleCard = function (locId) {
