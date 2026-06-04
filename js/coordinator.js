@@ -204,99 +204,99 @@
       filter = filter || '';
       tbody.innerHTML = '';
 
-      // Contractors at top, sorted by check-in time
-      var contractors = Object.entries(checkins)
-        .filter(function (e) { return e[1].isContractor && e[1].location === locationId; })
-        .sort(function (a, b) {
-          return new Date(a[1].checkedInAt) - new Date(b[1].checkedInAt);
-        })
-        .map(function (e) { return { key: e[0], data: e[1] }; });
-
-      contractors.forEach(function (c) {
-        var tr = document.createElement('tr');
-        tr.className = 'employee-row status-contractor';
-        tr.innerHTML =
-          '<td><strong>' + c.data.name + '</strong> <small style="color:#e65100;">(Contractor &mdash; ' + c.data.company + ')</small></td>' +
-          '<td><span class="status-pill pill-orange">&#x1F477; Contractor</span></td>' +
-          '<td></td>';
-        tbody.appendChild(tr);
-      });
-
       var pool;
       if (filter.length >= 2) {
-        // Search: alpha by last name, no status grouping
+        // Search across all employees, alpha by last name
         pool = EMPLOYEES.filter(function (e) {
           return e.name.toLowerCase().indexOf(filter) !== -1 ||
                  e.workerId.toLowerCase().indexOf(filter) !== -1;
         }).sort(function (a, b) {
           return lastName(a.name).localeCompare(lastName(b.name));
         });
-      } else {
-        // Split into: not checked in (alpha last name) | checked in / offsite (by check-in time)
-        var notIn   = employees.filter(function (e) { return !checkins[e.workerId]; });
-        var checkedIn = employees.filter(function (e) { return !!checkins[e.workerId]; });
 
-        // not-in: already sorted alpha by last name from init
-        // checked-in: sort by checkedInAt timestamp ascending
+        pool.forEach(function (emp) { appendEmployeeRow(emp, checkins); });
+
+      } else {
+        // 1. Not checked in — alpha by last name
+        var notIn     = employees.filter(function (e) { return !checkins[e.workerId]; });
+
+        // 2. Checked in employees — sorted by check-in time
+        var checkedIn = employees.filter(function (e) { return !!checkins[e.workerId]; });
         checkedIn.sort(function (a, b) {
-          var tA = checkins[a.workerId].checkedInAt || '';
-          var tB = checkins[b.workerId].checkedInAt || '';
-          return new Date(tA) - new Date(tB);
+          return new Date(checkins[a.workerId].checkedInAt || 0) - new Date(checkins[b.workerId].checkedInAt || 0);
         });
 
-        pool = notIn.concat(checkedIn);
-      }
+        // 3. Contractors at this location — sorted by check-in time
+        var contractors = Object.entries(checkins)
+          .filter(function (e) { return e[1].isContractor && e[1].location === locationId; })
+          .sort(function (a, b) { return new Date(a[1].checkedInAt || 0) - new Date(b[1].checkedInAt || 0); })
+          .map(function (e) { return { key: e[0], data: e[1] }; });
 
-      if (pool.length === 0 && contractors.length === 0) {
-        var tr = document.createElement('tr');
-        tr.innerHTML = '<td colspan="3" style="padding:16px;text-align:center;color:#888;">No employees found</td>';
-        tbody.appendChild(tr);
-        return;
-      }
-
-      pool.forEach(function (emp) {
-        var ci         = checkins[emp.workerId];
-        var ciStatus   = ci ? ci.status : null;
-        var atLocation = ci ? ci.location === locationId : false;
-        var isWalkIn   = emp.assignedLocation !== locationId;
-        var assignedLbl = isWalkIn
-          ? ' <small style="color:#888;">(Assigned: ' + (getLocation(emp.assignedLocation) ? getLocation(emp.assignedLocation).label : emp.assignedLocation) + ')</small>'
-          : '';
-
-        var pillHtml = '', statusClass = '', actionBtn = '';
-
-        if (!ci) {
-          pillHtml    = '<span class="status-pill pill-red">Not In</span>';
-          statusClass = 'status-unchecked';
-          actionBtn   =
-            '<button class="btn btn-success" style="padding:5px 10px;font-size:0.8rem;margin-right:4px" onclick="doCheckIn(\'' + emp.workerId + '\',\'present\',event)">&#x2705; Check In</button>' +
-            '<button class="btn btn-offsite" style="padding:5px 10px;font-size:0.8rem;" onclick="doCheckIn(\'' + emp.workerId + '\',\'offsite\',event)">&#x1F3E0; Off-Site</button>';
-        } else if (ciStatus === 'offsite') {
-          pillHtml    = '<span class="status-pill pill-purple">&#x1F3E0; Off-Site</span>';
-          statusClass = 'status-offsite';
-          actionBtn   = '<button class="btn btn-success" style="padding:5px 10px;font-size:0.8rem;" onclick="doCheckIn(\'' + emp.workerId + '\',\'present\',event)">&#x2705; Move to Present</button>';
-        } else if (ciStatus === 'present' && atLocation) {
-          pillHtml    = '<span class="status-pill pill-green">&#x2705; Checked In</span>';
-          statusClass = 'status-checked';
-          actionBtn   = '';
-        } else {
-          var atLbl = getLocation(ci.location) ? getLocation(ci.location).label : ci.location;
-          pillHtml    = '<span class="status-pill pill-blue">At ' + atLbl + '</span>';
-          statusClass = 'status-elsewhere';
-          actionBtn   =
-            '<button class="btn btn-primary" style="padding:5px 10px;font-size:0.8rem;margin-right:4px" onclick="doCheckIn(\'' + emp.workerId + '\',\'present\',event)">Move Here</button>' +
-            '<button class="btn btn-offsite" style="padding:5px 10px;font-size:0.8rem;" onclick="doCheckIn(\'' + emp.workerId + '\',\'offsite\',event)">&#x1F3E0; Off-Site</button>';
+        if (notIn.length === 0 && checkedIn.length === 0 && contractors.length === 0) {
+          var tr = document.createElement('tr');
+          tr.innerHTML = '<td colspan="3" style="padding:16px;text-align:center;color:#888;">No employees found</td>';
+          tbody.appendChild(tr);
+          return;
         }
 
-        var tr       = document.createElement('tr');
-        tr.id        = 'row-' + emp.workerId;
-        tr.className = 'employee-row ' + statusClass;
-        tr.innerHTML =
-          '<td><strong>' + emp.name + '</strong>' + assignedLbl + '</td>' +
-          '<td>' + pillHtml + '</td>' +
-          '<td>' + actionBtn + '</td>';
-        tbody.appendChild(tr);
-      });
+        notIn.forEach(function (emp) { appendEmployeeRow(emp, checkins); });
+        checkedIn.forEach(function (emp) { appendEmployeeRow(emp, checkins); });
+
+        // Contractors go at the very bottom
+        contractors.forEach(function (c) {
+          var tr = document.createElement('tr');
+          tr.className = 'employee-row status-contractor';
+          tr.innerHTML =
+            '<td><strong>' + c.data.name + '</strong> <small style="color:#e65100;">(Contractor &mdash; ' + c.data.company + ')</small></td>' +
+            '<td><span class="status-pill pill-orange">&#x1F477; Contractor</span></td>' +
+            '<td></td>';
+          tbody.appendChild(tr);
+        });
+      }
+    }
+
+    function appendEmployeeRow(emp, checkins) {
+      var ci         = checkins[emp.workerId];
+      var ciStatus   = ci ? ci.status : null;
+      var atLocation = ci ? ci.location === locationId : false;
+      var isWalkIn   = emp.assignedLocation !== locationId;
+      var assignedLbl = isWalkIn
+        ? ' <small style="color:#888;">(Assigned: ' + (getLocation(emp.assignedLocation) ? getLocation(emp.assignedLocation).label : emp.assignedLocation) + ')</small>'
+        : '';
+
+      var pillHtml = '', statusClass = '', actionBtn = '';
+
+      if (!ci) {
+        pillHtml    = '<span class="status-pill pill-red">Not In</span>';
+        statusClass = 'status-unchecked';
+        actionBtn   =
+          '<button class="btn btn-success" style="padding:5px 10px;font-size:0.8rem;margin-right:4px" onclick="doCheckIn(\'' + emp.workerId + '\',\'present\',event)">&#x2705; Check In</button>' +
+          '<button class="btn btn-offsite" style="padding:5px 10px;font-size:0.8rem;" onclick="doCheckIn(\'' + emp.workerId + '\',\'offsite\',event)">&#x1F3E0; Off-Site</button>';
+      } else if (ciStatus === 'offsite') {
+        pillHtml    = '<span class="status-pill pill-purple">&#x1F3E0; Off-Site</span>';
+        statusClass = 'status-offsite';
+        actionBtn   = '<button class="btn btn-success" style="padding:5px 10px;font-size:0.8rem;" onclick="doCheckIn(\'' + emp.workerId + '\',\'present\',event)">&#x2705; Move to Present</button>';
+      } else if (ciStatus === 'present' && atLocation) {
+        pillHtml    = '<span class="status-pill pill-green">&#x2705; Checked In</span>';
+        statusClass = 'status-checked';
+        actionBtn   = '';
+      } else {
+        var atLbl = getLocation(ci.location) ? getLocation(ci.location).label : ci.location;
+        pillHtml    = '<span class="status-pill pill-blue">At ' + atLbl + '</span>';
+        statusClass = 'status-elsewhere';
+        actionBtn   =
+          '<button class="btn btn-primary" style="padding:5px 10px;font-size:0.8rem;margin-right:4px" onclick="doCheckIn(\'' + emp.workerId + '\',\'present\',event)">Move Here</button>' +
+          '<button class="btn btn-offsite" style="padding:5px 10px;font-size:0.8rem;" onclick="doCheckIn(\'' + emp.workerId + '\',\'offsite\',event)">&#x1F3E0; Off-Site</button>';
+      }
+
+      var tr       = document.createElement('tr');
+      tr.id        = 'row-' + emp.workerId;
+      tr.className = 'employee-row ' + statusClass;
+      tr.innerHTML =
+        '<td><strong>' + emp.name + '</strong>' + assignedLbl + '</td>' +
+        '<td>' + pillHtml + '</td>' +
+        '<td>' + actionBtn + '</td>';
+      tbody.appendChild(tr);
     }
 
     window.doCheckIn = function (workerId, status, event) {
