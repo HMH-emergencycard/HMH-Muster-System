@@ -1,13 +1,11 @@
 // Service Worker — forces fresh fetch of JS/CSS on every deploy
-const CACHE_VERSION = 'v20260604-2';
+const CACHE_VERSION = 'v20260604-3';
 const CACHE_NAME    = 'hmh-muster-' + CACHE_VERSION;
 
-// On install: skip waiting so new SW activates immediately
 self.addEventListener('install', function (e) {
   self.skipWaiting();
 });
 
-// On activate: delete ALL old caches
 self.addEventListener('activate', function (e) {
   e.waitUntil(
     caches.keys().then(function (keys) {
@@ -21,7 +19,6 @@ self.addEventListener('activate', function (e) {
   );
 });
 
-// Fetch strategy: Network first, fall back to cache for same-origin requests
 self.addEventListener('fetch', function (e) {
   if (e.request.method !== 'GET') return;
   var url = new URL(e.request.url);
