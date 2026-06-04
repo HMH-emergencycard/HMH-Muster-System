@@ -378,7 +378,7 @@ body {
 .dash-emp-row.status-elsewhere { background: #e3f0ff; }
 .dash-emp-row.status-offsite   { background: #f3e5f5; }
 
-/* ── Contractor Panel (dashboard) ── */
+/* ── Contractor Panel (dashboard) — matches dash-card style ── */
 .contractor-panel {
   margin-top: 24px;
   background: #fff;
@@ -388,25 +388,26 @@ body {
   overflow: hidden;
 }
 .contractor-panel-header {
-  background: #fff3e0;
-  padding: 12px 16px;
+  padding: 12px 14px 8px;
+  font-size: 1rem;
   font-weight: bold;
-  font-size: 0.95rem;
   color: #e65100;
-  border-bottom: 1px solid #ffcc80;
+  border-bottom: 1px solid #ffe0b2;
+  background: #fff;
 }
-.contractor-panel-list { padding: 8px 0; }
+.contractor-panel-list { padding: 0; }
 .contractor-row {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 8px 16px;
+  padding: 9px 14px;
   border-bottom: 1px solid #f0f0f0;
-  font-size: 0.85rem;
+  font-size: 0.84rem;
+  background: #fff3e0;
   flex-wrap: wrap;
 }
 .contractor-row:last-child { border-bottom: none; }
-.contractor-name    { flex: 2; min-width: 120px; }
+.contractor-name    { flex: 2; min-width: 120px; font-weight: bold; }
 .contractor-company { flex: 2; min-width: 120px; color: #666; }
 .contractor-location { flex: 1; min-width: 80px; text-align: right; }
 
