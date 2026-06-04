@@ -32,8 +32,19 @@
     init();
   });
 
+  // ── Helper: extract last name for sorting ──
+  function lastName(name) {
+    var parts = (name || '').trim().split(/\s+/);
+    return parts[parts.length - 1].toLowerCase();
+  }
+
   function init() {
     var employees = getEmployeesByLocation(locationId);
+
+    // Pre-sort the base list alphabetically by last name
+    employees.sort(function (a, b) {
+      return lastName(a.name).localeCompare(lastName(b.name));
+    });
 
     function checkSessionBanner() {
       var banner = document.getElementById('noSessionBanner');
@@ -54,7 +65,7 @@
       });
 
     // ── NFC ──
-    var nfcBtn  = document.getElementById('nfcBtn');
+    var nfcBtn    = document.getElementById('nfcBtn');
     var nfcActive = false;
     nfcBtn.addEventListener('click', function () {
       if (!('NDEFReader' in window)) {
@@ -98,12 +109,12 @@
     });
 
     // ── Add Contractor form ──
-    var addBtn       = document.getElementById('addContractorBtn');
-    var contractorForm = document.getElementById('contractorForm');
+    var addBtn                 = document.getElementById('addContractorBtn');
+    var contractorForm         = document.getElementById('contractorForm');
     var contractorNameInput    = document.getElementById('contractorName');
     var contractorCompanyInput = document.getElementById('contractorCompany');
-    var contractorSubmit = document.getElementById('contractorSubmit');
-    var contractorCancel = document.getElementById('contractorCancel');
+    var contractorSubmit       = document.getElementById('contractorSubmit');
+    var contractorCancel       = document.getElementById('contractorCancel');
 
     addBtn.addEventListener('click', function () {
       contractorForm.style.display = contractorForm.style.display === 'none' ? 'flex' : 'none';
@@ -193,9 +204,12 @@
       filter = filter || '';
       tbody.innerHTML = '';
 
-      // Always show contractors at the top of the list
+      // Contractors at top, sorted by check-in time
       var contractors = Object.entries(checkins)
         .filter(function (e) { return e[1].isContractor && e[1].location === locationId; })
+        .sort(function (a, b) {
+          return new Date(a[1].checkedInAt) - new Date(b[1].checkedInAt);
+        })
         .map(function (e) { return { key: e[0], data: e[1] }; });
 
       contractors.forEach(function (c) {
@@ -210,14 +224,27 @@
 
       var pool;
       if (filter.length >= 2) {
+        // Search: alpha by last name, no status grouping
         pool = EMPLOYEES.filter(function (e) {
           return e.name.toLowerCase().indexOf(filter) !== -1 ||
                  e.workerId.toLowerCase().indexOf(filter) !== -1;
+        }).sort(function (a, b) {
+          return lastName(a.name).localeCompare(lastName(b.name));
         });
       } else {
-        pool = employees.slice().sort(function (a, b) {
-          return statusOrder(a, checkins) - statusOrder(b, checkins);
+        // Split into: not checked in (alpha last name) | checked in / offsite (by check-in time)
+        var notIn   = employees.filter(function (e) { return !checkins[e.workerId]; });
+        var checkedIn = employees.filter(function (e) { return !!checkins[e.workerId]; });
+
+        // not-in: already sorted alpha by last name from init
+        // checked-in: sort by checkedInAt timestamp ascending
+        checkedIn.sort(function (a, b) {
+          var tA = checkins[a.workerId].checkedInAt || '';
+          var tB = checkins[b.workerId].checkedInAt || '';
+          return new Date(tA) - new Date(tB);
         });
+
+        pool = notIn.concat(checkedIn);
       }
 
       if (pool.length === 0 && contractors.length === 0) {
@@ -276,13 +303,6 @@
       if (event) event.stopPropagation();
       handleCheckIn(workerId, status);
     };
-
-    function statusOrder(emp, checkins) {
-      var ci = checkins[emp.workerId];
-      if (!ci) return 0;
-      if (ci.status === 'offsite') return 2;
-      return ci.location === locationId ? 3 : 1;
-    }
 
     renderTable({});
     updateCount({});
