@@ -32,7 +32,6 @@
     init();
   });
 
-  // ── Helper: extract last name for sorting ──
   function lastName(name) {
     var parts = (name || '').trim().split(/\s+/);
     return parts[parts.length - 1].toLowerCase();
@@ -41,7 +40,7 @@
   function init() {
     var employees = getEmployeesByLocation(locationId);
 
-    // Pre-sort the base list alphabetically by last name
+    // Pre-sort alphabetically by last name
     employees.sort(function (a, b) {
       return lastName(a.name).localeCompare(lastName(b.name));
     });
@@ -199,63 +198,76 @@
         accounted + ' / ' + employees.length + ' Accounted For';
     }
 
-    // ── Render table ──
+    // ── Build a single ordered row list, then stamp into DOM at once ──
     function renderTable(checkins, filter) {
       filter = filter || '';
-      tbody.innerHTML = '';
 
-      var pool;
+      // Collect all <tr> elements in the correct order into this array
+      var rows = [];
+
       if (filter.length >= 2) {
-        // Search across all employees, alpha by last name
-        pool = EMPLOYEES.filter(function (e) {
+        // Search mode: all employees alpha by last name
+        var pool = EMPLOYEES.filter(function (e) {
           return e.name.toLowerCase().indexOf(filter) !== -1 ||
                  e.workerId.toLowerCase().indexOf(filter) !== -1;
         }).sort(function (a, b) {
           return lastName(a.name).localeCompare(lastName(b.name));
         });
-
-        pool.forEach(function (emp) { appendEmployeeRow(emp, checkins); });
-
-      } else {
-        // 1. Not checked in — alpha by last name
-        var notIn     = employees.filter(function (e) { return !checkins[e.workerId]; });
-
-        // 2. Checked in employees — sorted by check-in time
-        var checkedIn = employees.filter(function (e) { return !!checkins[e.workerId]; });
-        checkedIn.sort(function (a, b) {
-          return new Date(checkins[a.workerId].checkedInAt || 0) - new Date(checkins[b.workerId].checkedInAt || 0);
+        pool.forEach(function (emp) {
+          rows.push(buildEmployeeRow(emp, checkins));
         });
 
-        // 3. Contractors at this location — sorted by check-in time
+      } else {
+        // Normal mode:
+        // SECTION 1 — not yet checked in, alpha by last name (already sorted)
+        var notIn = employees.filter(function (e) { return !checkins[e.workerId]; });
+        notIn.forEach(function (emp) {
+          rows.push(buildEmployeeRow(emp, checkins));
+        });
+
+        // SECTION 2 — employees who have checked in, by check-in time
+        var checkedIn = employees.filter(function (e) { return !!checkins[e.workerId]; });
+        checkedIn.sort(function (a, b) {
+          return new Date(checkins[a.workerId].checkedInAt || 0) -
+                 new Date(checkins[b.workerId].checkedInAt || 0);
+        });
+        checkedIn.forEach(function (emp) {
+          rows.push(buildEmployeeRow(emp, checkins));
+        });
+
+        // SECTION 3 — contractors at this location, by check-in time (always last)
         var contractors = Object.entries(checkins)
-          .filter(function (e) { return e[1].isContractor && e[1].location === locationId; })
-          .sort(function (a, b) { return new Date(a[1].checkedInAt || 0) - new Date(b[1].checkedInAt || 0); })
-          .map(function (e) { return { key: e[0], data: e[1] }; });
+          .filter(function (entry) {
+            return entry[1].isContractor === true && entry[1].location === locationId;
+          })
+          .sort(function (a, b) {
+            return new Date(a[1].checkedInAt || 0) - new Date(b[1].checkedInAt || 0);
+          });
 
-        if (notIn.length === 0 && checkedIn.length === 0 && contractors.length === 0) {
-          var tr = document.createElement('tr');
-          tr.innerHTML = '<td colspan="3" style="padding:16px;text-align:center;color:#888;">No employees found</td>';
-          tbody.appendChild(tr);
-          return;
-        }
-
-        notIn.forEach(function (emp) { appendEmployeeRow(emp, checkins); });
-        checkedIn.forEach(function (emp) { appendEmployeeRow(emp, checkins); });
-
-        // Contractors go at the very bottom
-        contractors.forEach(function (c) {
+        contractors.forEach(function (entry) {
+          var ci = entry[1];
           var tr = document.createElement('tr');
           tr.className = 'employee-row status-contractor';
           tr.innerHTML =
-            '<td><strong>' + c.data.name + '</strong> <small style="color:#e65100;">(Contractor &mdash; ' + c.data.company + ')</small></td>' +
+            '<td><strong>' + ci.name + '</strong> <small style="color:#e65100;">(Contractor &mdash; ' + ci.company + ')</small></td>' +
             '<td><span class="status-pill pill-orange">&#x1F477; Contractor</span></td>' +
             '<td></td>';
-          tbody.appendChild(tr);
+          rows.push(tr);
         });
+      }
+
+      // Clear tbody and append all rows in order
+      tbody.innerHTML = '';
+      if (rows.length === 0) {
+        var empty = document.createElement('tr');
+        empty.innerHTML = '<td colspan="3" style="padding:16px;text-align:center;color:#888;">No employees found</td>';
+        tbody.appendChild(empty);
+      } else {
+        rows.forEach(function (tr) { tbody.appendChild(tr); });
       }
     }
 
-    function appendEmployeeRow(emp, checkins) {
+    function buildEmployeeRow(emp, checkins) {
       var ci         = checkins[emp.workerId];
       var ciStatus   = ci ? ci.status : null;
       var atLocation = ci ? ci.location === locationId : false;
@@ -296,7 +308,7 @@
         '<td><strong>' + emp.name + '</strong>' + assignedLbl + '</td>' +
         '<td>' + pillHtml + '</td>' +
         '<td>' + actionBtn + '</td>';
-      tbody.appendChild(tr);
+      return tr;
     }
 
     window.doCheckIn = function (workerId, status, event) {
