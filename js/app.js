@@ -16,7 +16,7 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
-// ── Active session key (stored in sessionStorage so each tab shares it) ──
+// ── Active session key ──
 function getActiveSession() { return sessionStorage.getItem('musterSession'); }
 function setActiveSession(id) { sessionStorage.setItem('musterSession', id); }
 function startNewSession() {
@@ -27,8 +27,6 @@ function startNewSession() {
 }
 
 // ── Muster Locations ──
-// Only ML 5-2 is second shift.
-// ML 13-2 variants are separate department locations (no shift label).
 const MUSTER_LOCATIONS = [
   { id: "ML1",              label: "ML 1",             secondShift: false, coordinators: ["Robert Cameron", "Luc Ngo", "Ahsan Siddiqui"] },
   { id: "ML2",              label: "ML 2",             secondShift: false, coordinators: ["James Gay", "Bryan Armer"] },
@@ -51,13 +49,12 @@ const MUSTER_LOCATIONS = [
 function getLocation(id) { return MUSTER_LOCATIONS.find(l => l.id === id); }
 
 // ========================================================
-// EMPLOYEE ROSTER — Loaded from Firebase (uploaded via admin-upload.html)
+// EMPLOYEE ROSTER — Loaded from Firebase
 // ========================================================
 let EMPLOYEES = [];
 let rosterLoaded = false;
 let rosterCallbacks = [];
 
-// Load roster from Firebase once on startup
 db.ref('roster').once('value', function(snap) {
   const data = snap.val();
   if (data) {
@@ -80,7 +77,6 @@ db.ref('roster').once('value', function(snap) {
   rosterCallbacks = [];
 });
 
-// Call cb(EMPLOYEES) once roster is ready (or immediately if already loaded)
 function onRosterReady(cb) {
   if (rosterLoaded) { cb(EMPLOYEES); }
   else { rosterCallbacks.push(cb); }
@@ -94,17 +90,19 @@ function getEmployeeById(workerId) {
 }
 
 // ── Check-in helper ──
-function checkInEmployee(workerId, checkedInAtLocation) {
+// status: 'present' (default) or 'offsite'
+function checkInEmployee(workerId, checkedInAtLocation, status) {
   const session = getActiveSession();
   if (!session) { alert('No active session. Please start a session first.'); return Promise.reject(new Error('No active session')); }
   const emp = getEmployeeById(workerId);
   if (!emp) { console.warn('Employee not found:', workerId); return Promise.reject(new Error('Employee not found')); }
-  return db.ref(`sessions/${session}/checkins/${workerId}`).set({
+  return db.ref('sessions/' + session + '/checkins/' + workerId).set({
     name:             emp.name,
     position:         emp.position,
     checkedInAt:      new Date().toISOString(),
     location:         checkedInAtLocation,
-    assignedLocation: emp.assignedLocation
+    assignedLocation: emp.assignedLocation,
+    status:           status || 'present'
   });
 }
 
@@ -112,7 +110,7 @@ function checkInEmployee(workerId, checkedInAtLocation) {
 function onCheckinsUpdate(callback) {
   const session = getActiveSession();
   if (!session) return;
-  db.ref(`sessions/${session}/checkins`).on('value', snap => {
+  db.ref('sessions/' + session + '/checkins').on('value', snap => {
     callback(snap.val() || {});
   });
 }
