@@ -1,21 +1,6 @@
 (function () {
 
-  var CORRECT_PIN = '1234';
-
-  window.checkPin = function () {
-    var val = document.getElementById('pinInput').value;
-    if (val === CORRECT_PIN) {
-      document.getElementById('pin-overlay').style.display = 'none';
-      loadHistory();
-    } else {
-      document.getElementById('pinError').style.display = 'block';
-      document.getElementById('pinInput').value = '';
-    }
-  };
-
-  document.getElementById('pinInput').addEventListener('keydown', function (e) {
-    if (e.key === 'Enter') window.checkPin();
-  });
+  loadHistory();
 
   function loadHistory() {
     var container = document.getElementById('historyList');
