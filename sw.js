@@ -1,5 +1,5 @@
 // Service Worker — forces fresh fetch of JS/CSS on every deploy
-const CACHE_VERSION = 'v20260604-3';
+const CACHE_VERSION = 'v20260604-4';
 const CACHE_NAME    = 'hmh-muster-' + CACHE_VERSION;
 
 self.addEventListener('install', function (e) {

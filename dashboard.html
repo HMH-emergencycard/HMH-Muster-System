@@ -46,8 +46,9 @@
       <button class="btn btn-warning" id="resetBtn" style="display:none;">&#x1F504; Reset Data</button>
       <div class="meta" id="lastUpdated"></div>
     </div>
-    <div>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
       <a href="index.html" class="btn btn-back">&larr; Back to Locations</a>
+      <a href="history.html" class="btn btn-secondary" style="font-size:0.82rem;padding:7px 14px;">Session History</a>
     </div>
   </div>
 
@@ -59,6 +60,8 @@
     <div class="contractor-panel-list" id="contractorList"></div>
   </div>
 </div>
+
+<div id="toast"></div>
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>

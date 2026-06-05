@@ -90,7 +90,6 @@ function getEmployeeById(workerId) {
 }
 
 // ── Check-in helper ──
-// status: 'present' (default) or 'offsite'
 function checkInEmployee(workerId, checkedInAtLocation, status) {
   const session = getActiveSession();
   if (!session) { alert('No active session. Please start a session first.'); return Promise.reject(new Error('No active session')); }
@@ -113,6 +112,71 @@ function onCheckinsUpdate(callback) {
   db.ref('sessions/' + session + '/checkins').on('value', snap => {
     callback(snap.val() || {});
   });
+}
+
+// ── Save session summary to history ──
+function saveSessionSummary(sessionId, checkins, startedAt) {
+  var endedAt         = new Date();
+  var startTime       = startedAt ? new Date(startedAt) : endedAt;
+  var durationMinutes = Math.round((endedAt - startTime) / 60000);
+
+  var contractors  = 0;
+  var totalOffSite = 0;
+
+  Object.values(checkins).forEach(function (ci) {
+    if (ci.isContractor) contractors++;
+  });
+
+  var totalAccounted = 0;
+
+  var locationStats = MUSTER_LOCATIONS.map(function (loc) {
+    var emps      = getEmployeesByLocation(loc.id);
+    var checkedIn = emps.filter(function (e) {
+      return checkins[e.workerId] && checkins[e.workerId].status === 'present';
+    }).length;
+    var offSite   = emps.filter(function (e) {
+      return checkins[e.workerId] && checkins[e.workerId].status === 'offsite';
+    }).length;
+    var accounted = emps.filter(function (e) { return !!checkins[e.workerId]; }).length;
+    var missing   = emps
+      .filter(function (e) { return !checkins[e.workerId]; })
+      .map(function (e) { return e.name; });
+    var pct = emps.length ? Math.round((accounted / emps.length) * 100) : 100;
+
+    totalAccounted += accounted;
+    totalOffSite   += offSite;
+
+    return {
+      id:         loc.id,
+      label:      loc.label,
+      assigned:   emps.length,
+      accounted:  accounted,
+      checkedIn:  checkedIn,
+      offSite:    offSite,
+      pct:        pct,
+      incomplete: accounted < emps.length,
+      missing:    missing
+    };
+  });
+
+  var overallPct = EMPLOYEES.length
+    ? Math.round((totalAccounted / EMPLOYEES.length) * 100)
+    : 0;
+
+  var summary = {
+    sessionId:       sessionId,
+    startedAt:       startTime.toISOString(),
+    endedAt:         endedAt.toISOString(),
+    durationMinutes: durationMinutes,
+    totalEmployees:  EMPLOYEES.length,
+    totalCheckedIn:  totalAccounted,
+    totalOffSite:    totalOffSite,
+    overallPct:      overallPct,
+    contractors:     contractors,
+    locations:       locationStats
+  };
+
+  return db.ref('sessionHistory/' + sessionId).set(summary);
 }
 
 // ── Toast utility ──

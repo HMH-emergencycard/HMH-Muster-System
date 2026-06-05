@@ -80,6 +80,10 @@
         startListening(id);
         showToast('Session started \u2705');
       } else {
+        // Save summary before stopping
+        db.ref('sessions/' + current + '/startedAt').once('value', function (snap) {
+          saveSessionSummary(current, latestCheckins, snap.val());
+        });
         db.ref('sessions/' + current + '/active').set(false);
         db.ref('sessions/' + current + '/endedAt').set(new Date().toISOString());
         sessionStorage.removeItem('musterSession');
@@ -132,9 +136,8 @@
         rows.push([emp.name, emp.workerId, emp.position, emp.supervisoryOrg, assignedLabel, status, checkedAtLabel, checkTime]);
       });
 
-      // Add contractors
       Object.entries(checkins).forEach(function (entry) {
-        var key = entry[0]; var ci = entry[1];
+        var ci = entry[1];
         if (!ci.isContractor) return;
         var locLabel = getLocation(ci.location) ? getLocation(ci.location).label : ci.location;
         rows.push([ci.name, 'CONTRACTOR', ci.company || '', '', locLabel, 'Contractor', locLabel, ci.checkedInAt ? new Date(ci.checkedInAt).toLocaleTimeString() : '']);
@@ -223,7 +226,6 @@
     document.getElementById('overallBadge').textContent = overall + ' Total';
   }
 
-  // ── Contractor Panel ──
   function renderContractorPanel(checkins) {
     var panel = document.getElementById('contractorPanel');
     var list  = document.getElementById('contractorList');
@@ -240,7 +242,7 @@
     list.innerHTML = '';
 
     contractors.forEach(function (entry) {
-      var ci      = entry[1];
+      var ci       = entry[1];
       var locLabel = getLocation(ci.location) ? getLocation(ci.location).label : ci.location;
       var row = document.createElement('div');
       row.className = 'contractor-row';

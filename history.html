@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <title>HMH Muster - Session History</title>
+  <link rel="stylesheet" href="css/muster.css">
+</head>
+<body>
+
+<!-- PIN Overlay -->
+<div id="pin-overlay">
+  <div class="pin-box">
+    <img src="logo.png" alt="HMH Logo" style="max-width:160px;margin-bottom:16px;" onerror="this.style.display='none'">
+    <h2>Manager Access</h2>
+    <p>Enter your PIN to view session history</p>
+    <input type="password" class="pin-input" id="pinInput" maxlength="6" placeholder="&#x2022;&#x2022;&#x2022;&#x2022;" inputmode="numeric">
+    <br><br>
+    <button class="btn btn-primary" onclick="checkPin()">Enter</button>
+    <div class="pin-error" id="pinError">Incorrect PIN. Please try again.</div>
+  </div>
+</div>
+
+<div class="header">
+  <img src="logo.png" alt="HMH Logo" onerror="this.style.display='none'">
+  <h1>HMH &mdash; Session History</h1>
+</div>
+
+<div class="page-dashboard">
+  <div class="dashboard-summary" style="justify-content:space-between;">
+    <div>
+      <div style="font-size:1.1rem;font-weight:bold;color:#00AEEF;">Past Muster Sessions</div>
+      <div class="meta">Click a session to expand per-location details</div>
+    </div>
+    <div>
+      <a href="dashboard.html" class="btn btn-back">&larr; Back to Dashboard</a>
+    </div>
+  </div>
+
+  <div id="historyList" style="margin-top:16px;">
+    <div style="text-align:center;padding:40px;color:#888;">Loading history&#x2026;</div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script src="js/app.js"></script>
+<script src="js/history.js"></script>
+<script>
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js');
+  }
+</script>
+</body>
+</html>
