@@ -2,6 +2,20 @@
 
   loadHistory();
 
+  // ── Clear All History button ──
+  document.getElementById('clearHistoryBtn').addEventListener('click', function () {
+    // First confirmation
+    if (!confirm('Are you sure you want to delete ALL session history?\n\nThis will permanently erase every past muster session record and cannot be undone.')) return;
+    // Second confirmation
+    if (!confirm('FINAL WARNING\n\nThis will delete all session history forever. There is no way to recover it.\n\nPress OK to permanently delete all history.')) return;
+
+    db.ref('sessionHistory').remove().then(function () {
+      document.getElementById('historyList').innerHTML =
+        '<div style="text-align:center;padding:40px;color:#888;">No session history yet.<br><br>Sessions will be recorded here automatically when you stop a session.</div>';
+      showToast('All session history deleted');
+    });
+  });
+
   function loadHistory() {
     var container = document.getElementById('historyList');
 

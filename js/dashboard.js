@@ -51,7 +51,6 @@
     document.getElementById('overallCount').textContent = '0 / ' + EMPLOYEES.length;
     document.getElementById('overallBadge').textContent = '0 / ' + EMPLOYEES.length + ' Total';
 
-    // ── Session Start / Stop / Reset ──
     var sessionBtn = document.getElementById('sessionBtn');
     var resetBtn   = document.getElementById('resetBtn');
     var exportBtn  = document.getElementById('exportBtn');
@@ -80,7 +79,7 @@
         startListening(id);
         showToast('Session started \u2705');
       } else {
-        // Save summary before stopping
+        // Save summary to history before stopping
         db.ref('sessions/' + current + '/startedAt').once('value', function (snap) {
           saveSessionSummary(current, latestCheckins, snap.val());
         });
@@ -95,8 +94,9 @@
       }
     });
 
+    // Clears active check-in data only — session history is preserved
     resetBtn.addEventListener('click', function () {
-      if (!confirm('Reset all check-in data? This cannot be undone.')) return;
+      if (!confirm('Reset current check-in data?\n\nThis clears the active session only. Session history will NOT be affected.')) return;
       db.ref('sessions').remove().then(function () {
         sessionStorage.removeItem('musterSession');
         listeningSession = null;
@@ -107,7 +107,7 @@
         document.getElementById('overallBadge').textContent = '0 / ' + EMPLOYEES.length + ' Total';
         document.getElementById('lastUpdated').textContent  = '';
         renderContractorPanel({});
-        showToast('Check-in data reset \u2705');
+        showToast('Check-in data cleared \u2705 History preserved');
       });
     });
 

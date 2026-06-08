@@ -17,12 +17,13 @@
 </div>
 
 <div class="page-dashboard">
-  <div class="dashboard-summary" style="justify-content:space-between;">
+  <div class="dashboard-summary" style="justify-content:space-between;flex-wrap:wrap;gap:12px;">
     <div>
       <div style="font-size:1.1rem;font-weight:bold;color:#00AEEF;">Past Muster Sessions</div>
       <div class="meta">Click a session to expand per-location details</div>
     </div>
-    <div>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+      <button class="btn btn-danger" id="clearHistoryBtn" style="font-size:0.82rem;padding:7px 14px;">Clear All History</button>
       <a href="dashboard.html" class="btn btn-back">&larr; Back to Dashboard</a>
     </div>
   </div>
