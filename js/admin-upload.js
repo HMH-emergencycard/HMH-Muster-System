@@ -1,21 +1,5 @@
 (function () {
 
-  const CORRECT_PIN = '1234';
-
-  // ── PIN ──
-  window.checkPin = function () {
-    var val = document.getElementById('pinInput').value;
-    if (val === CORRECT_PIN) {
-      document.getElementById('pinOverlay').style.display = 'none';
-    } else {
-      document.getElementById('pinError').style.display = 'block';
-      document.getElementById('pinInput').value = '';
-    }
-  };
-  document.getElementById('pinInput').addEventListener('keydown', function (e) {
-    if (e.key === 'Enter') window.checkPin();
-  });
-
   // ── Tab name → Location ID mapping ──
   var TAB_MAP = {
     'ML 1':             'ML1',
@@ -39,13 +23,11 @@
   var parsedEmployees = [];
 
   // ── Flexible column finder ──
-  // Finds a column index by checking if any header contains the keyword (case-insensitive)
   function findCol(headers, keyword) {
     var kw = keyword.toLowerCase();
     for (var i = 0; i < headers.length; i++) {
       if (headers[i].toLowerCase().replace(/\s+/g, ' ').trim() === kw) return i;
     }
-    // Fallback: partial match
     for (var i = 0; i < headers.length; i++) {
       if (headers[i].toLowerCase().indexOf(kw) !== -1) return i;
     }
@@ -98,7 +80,6 @@
           var sheet   = workbook.Sheets[sheetName];
           var allRows = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' });
 
-          // Find the header row — look for a row containing 'worker id' (case-insensitive)
           var headerRowIdx = -1;
           var headers      = [];
           for (var i = 0; i < allRows.length; i++) {
@@ -117,7 +98,6 @@
             return;
           }
 
-          // Find columns flexibly
           var colWorker = findCol(headers, 'worker');
           var colId     = findCol(headers, 'worker id');
           var colPos    = findCol(headers, 'position');
@@ -150,7 +130,7 @@
             });
           }
 
-          debugLines.push('  → ' + (parsedEmployees.length - countBefore) + ' employees read');
+          debugLines.push('  \u2192 ' + (parsedEmployees.length - countBefore) + ' employees read');
         });
 
         console.log('=== ROSTER UPLOAD DEBUG ===');
@@ -159,7 +139,6 @@
         if (parsedEmployees.length === 0) {
           setStatus('\u26A0 0 employees found. Check browser console (F12) for debug info.', 0);
           renderSkipped(skippedTabs);
-          // Show debug info on page
           document.getElementById('summaryArea').innerHTML +=
             '<details style="margin-top:12px;"><summary style="cursor:pointer;color:#1976d2;">&#x1F50D; Debug info (click to expand)</summary>' +
             '<pre style="font-size:0.75rem;background:#f5f5f5;padding:10px;border-radius:6px;overflow:auto;">' +
