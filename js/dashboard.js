@@ -1,7 +1,7 @@
 (function () {
 
   // ========================================================
-  // PIN Protection — skip if already authenticated this session
+  // PIN Protection
   // ========================================================
   const CORRECT_PIN = '1234';
 
@@ -13,8 +13,9 @@
     });
   }
 
-  // Auto-bypass PIN if already authenticated in this browser session
-  if (sessionStorage.getItem('managerAuth') === '1') {
+  // Only skip PIN if navigating back from history.html in the same session
+  var cameFromHistory = document.referrer && document.referrer.includes('history.html');
+  if (cameFromHistory && sessionStorage.getItem('managerAuth') === '1') {
     unlockDashboard();
   }
 
