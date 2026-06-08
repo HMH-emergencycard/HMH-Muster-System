@@ -1,17 +1,27 @@
 (function () {
 
   // ========================================================
-  // PIN Protection
+  // PIN Protection — skip if already authenticated this session
   // ========================================================
   const CORRECT_PIN = '1234';
+
+  function unlockDashboard() {
+    document.getElementById('pin-overlay').style.display = 'none';
+    sessionStorage.setItem('managerAuth', '1');
+    onRosterReady(function () {
+      initDashboard();
+    });
+  }
+
+  // Auto-bypass PIN if already authenticated in this browser session
+  if (sessionStorage.getItem('managerAuth') === '1') {
+    unlockDashboard();
+  }
 
   window.checkPin = function () {
     const val = document.getElementById('pinInput').value;
     if (val === CORRECT_PIN) {
-      document.getElementById('pin-overlay').style.display = 'none';
-      onRosterReady(function () {
-        initDashboard();
-      });
+      unlockDashboard();
     } else {
       document.getElementById('pinError').style.display = 'block';
       document.getElementById('pinInput').value = '';
