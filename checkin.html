@@ -6,80 +6,175 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
-  <title>Check-In Confirmation</title>
+  <title>HMH Muster Check-In</title>
   <link rel="stylesheet" href="css/muster.css">
+  <style>
+    .checkin-page { max-width: 680px; margin: 0 auto; padding-bottom: 60px; }
+
+    .checkin-toolbar {
+      display: flex;
+      gap: 10px;
+      padding: 12px 16px;
+      background: #fff;
+      border-bottom: 1px solid #ddd;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .checkin-search {
+      flex: 1;
+      min-width: 180px;
+      padding: 12px 16px;
+      border: 1.5px solid #ccc;
+      border-radius: 8px;
+      font-size: 1rem;
+    }
+    .checkin-search:focus { outline: none; border-color: #00AEEF; }
+
+    /* Employee card list */
+    .emp-card-list { padding: 12px 16px; display: flex; flex-direction: column; gap: 10px; }
+
+    .emp-card {
+      background: #fff;
+      border-radius: 10px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.10);
+      padding: 14px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      flex-wrap: wrap;
+      border-left: 5px solid #ddd;
+      transition: border-color 0.3s;
+    }
+    .emp-card.card-unchecked { border-left-color: #dc3545; }
+    .emp-card.card-checked   { border-left-color: #28a745; background: #f0fff4; }
+    .emp-card.card-offsite   { border-left-color: #7b2fbe; background: #f9f0ff; }
+    .emp-card.card-elsewhere { border-left-color: #007bff; background: #f0f6ff; }
+    .emp-card.card-contractor { border-left-color: #e65100; background: #fff8f0; }
+
+    .emp-card-info { flex: 1; min-width: 120px; }
+    .emp-card-name { font-size: 1rem; font-weight: bold; color: #222; }
+    .emp-card-pos  { font-size: 0.78rem; color: #888; margin-top: 2px; }
+
+    .emp-card-actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+
+    .btn-checkin {
+      background: #28a745; color: #fff;
+      border: none; border-radius: 8px;
+      padding: 10px 18px;
+      font-size: 0.9rem; font-weight: bold;
+      cursor: pointer;
+      min-width: 100px;
+    }
+    .btn-checkin:active { background: #1e7e34; }
+
+    .btn-offsite {
+      background: #7b2fbe; color: #fff;
+      border: none; border-radius: 8px;
+      padding: 10px 14px;
+      font-size: 0.9rem; font-weight: bold;
+      cursor: pointer;
+    }
+    .btn-offsite:active { background: #5e1f96; }
+
+    .btn-move {
+      background: #00AEEF; color: #fff;
+      border: none; border-radius: 8px;
+      padding: 10px 14px;
+      font-size: 0.9rem; font-weight: bold;
+      cursor: pointer;
+    }
+    .btn-move:active { background: #0095cc; }
+
+    .done-badge {
+      font-size: 0.85rem; font-weight: bold;
+      color: #28a745;
+      display: flex; align-items: center; gap: 4px;
+    }
+    .offsite-badge {
+      font-size: 0.85rem; font-weight: bold;
+      color: #7b2fbe;
+      display: flex; align-items: center; gap: 4px;
+    }
+    .elsewhere-badge {
+      font-size: 0.78rem; color: #007bff; font-weight: bold;
+    }
+
+    .section-label {
+      font-size: 0.75rem;
+      font-weight: bold;
+      color: #aaa;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      padding: 8px 16px 2px;
+    }
+
+    /* Contractor form */
+    .contractor-form-card {
+      background: #fff8f0;
+      border: 1.5px solid #ffcc80;
+      border-radius: 10px;
+      padding: 14px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin: 0 16px;
+    }
+    .contractor-form-card input {
+      padding: 11px 14px;
+      border: 1.5px solid #ffb74d;
+      border-radius: 8px;
+      font-size: 0.95rem;
+    }
+    .contractor-form-card input:focus { outline: none; border-color: #e65100; }
+    .contractor-form-btns { display: flex; gap: 8px; }
+
+    .empty-msg { text-align: center; padding: 40px 16px; color: #aaa; font-size: 0.95rem; }
+  </style>
 </head>
 <body>
 
-<div class="header">
+<div class="header" id="pageHeader">
   <img src="logo.png" alt="HMH Logo" onerror="this.style.display='none'">
-  <h1>HMH Muster Check-In</h1>
+  <h1 id="locationTitle">Loading&hellip;</h1>
+  <div class="count-badge" id="countBadge">0 / 0</div>
+</div>
+<div class="coordinators" id="coordinatorNames"></div>
+
+<div class="no-session-banner" id="noSessionBanner" style="display:none;">
+  &#x26A0;&#xFE0F; No active session. Ask your coordinator to start a session.
 </div>
 
-<div style="padding:10px 16px;">
-  <a href="index.html" class="btn btn-back">&larr; Back to Locations</a>
+<div class="checkin-page">
+  <div class="checkin-toolbar">
+    <input type="text" class="checkin-search" id="searchBox" placeholder="&#x1F50D; Search your name&hellip;">
+    <button class="btn btn-contractor" id="addContractorBtn" style="white-space:nowrap;">&#x1F477; + Contractor</button>
+  </div>
+
+  <!-- Contractor form -->
+  <div class="contractor-form-card" id="contractorForm" style="display:none;margin-bottom:12px;">
+    <input type="text" id="contractorName" placeholder="Contractor Name">
+    <input type="text" id="contractorCompany" placeholder="Company Name">
+    <div class="contractor-form-btns">
+      <button class="btn btn-success" id="contractorSubmit" style="flex:1;">&#x2705; Check In</button>
+      <button class="btn btn-secondary" id="contractorCancel" style="flex:1;">Cancel</button>
+    </div>
+  </div>
+
+  <div id="empListWrap"></div>
 </div>
 
-<div class="checkin-confirm" id="confirmBox">
-  <div class="check-icon">&#x23F3;</div>
-  <h2>Processing...</h2>
-</div>
+<div id="toast"></div>
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script src="js/app.js"></script>
+<script src="js/checkin.js"></script>
 <script>
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('sw.js');
   }
-
-(function () {
-  const params = new URLSearchParams(window.location.search);
-  const wid    = params.get('id');
-  const box    = document.getElementById('confirmBox');
-
-  if (!wid) {
-    box.innerHTML = '<div class="check-icon">&#x274C;</div><h2 style="color:#dc3545">Invalid Link</h2><p class="emp-detail">No Worker ID found in URL.</p>';
-    return;
-  }
-
-  onRosterReady(function () {
-    const emp = getEmployeeById(wid);
-    if (!emp) {
-      box.innerHTML = '<div class="check-icon">&#x274C;</div><h2 style="color:#dc3545">Not Found</h2><p class="emp-detail">Worker ID <strong>' + wid + '</strong> was not found in the roster.</p>';
-      return;
-    }
-
-    const loc      = getLocation(emp.assignedLocation);
-    const locLabel = loc ? loc.label : emp.assignedLocation;
-
-    checkInEmployee(wid, emp.assignedLocation).then(function () {
-      const now = new Date().toLocaleTimeString();
-      box.innerHTML =
-        '<div class="check-icon">&#x2705;</div>' +
-        '<h2>' + emp.name + '</h2>' +
-        '<p class="emp-detail">' + emp.position + ' &mdash; ' + emp.supervisoryOrg + '</p>' +
-        '<p class="emp-detail" style="font-size:1.2rem;font-weight:bold;color:#00AEEF;margin-top:10px">Checked In at ' + locLabel + '</p>' +
-        '<p class="emp-detail">Time: ' + now + '</p>' +
-        '<button class="btn btn-primary" style="margin-top:20px" onclick="goBack()">Done</button>' +
-        '<p class="redirect-note">Redirecting in <span id="countdown">3</span>s&hellip;</p>';
-
-      var secs  = 3;
-      var timer = setInterval(function () {
-        secs--;
-        var el = document.getElementById('countdown');
-        if (el) el.textContent = secs;
-        if (secs <= 0) { clearInterval(timer); goBack(); }
-      }, 1000);
-    }).catch(function (err) {
-      box.innerHTML = '<div class="check-icon">&#x274C;</div><h2 style="color:#dc3545">Error</h2><p class="emp-detail">' + err.message + '</p>';
-    });
-
-    window.goBack = function () {
-      window.location.href = 'coordinator.html?location=' + encodeURIComponent(emp.assignedLocation);
-    };
-  });
-})();
 </script>
 </body>
 </html>
