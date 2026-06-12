@@ -18,12 +18,15 @@
 </div>
 <div class="coordinators" id="coordinatorNames"></div>
 
-<div class="page-coordinator">
+<!-- ══ STICKY TOP BAR — toolbar + chat dropdown ══ -->
+<div class="page-top-bar">
+
   <div class="toolbar">
     <a href="index.html" class="btn btn-back">&larr; Back</a>
     <input type="text" class="search-box" id="searchBox" placeholder="Search name (type 2+ chars to search ALL employees)...">
     <button class="btn btn-primary" id="nfcBtn">&#x1F4F1; Start NFC Scan</button>
     <button class="btn btn-contractor" id="addContractorBtn">&#x1F477; + Contractor</button>
+    <button class="btn-chat-toolbar" id="chatToolbarBtn">&#x1F4AC; Chat <span class="chat-unread" id="chat-unread-toolbar"></span></button>
   </div>
 
   <!-- Contractor form (hidden by default) -->
@@ -34,10 +37,23 @@
     <button class="btn btn-secondary" id="contractorCancel" style="padding:8px 16px;">Cancel</button>
   </div>
 
-  <div class="no-session-banner" id="noSessionBanner" style="display:none">
-    &#x26A0;&#xFE0F; No active session. Ask your manager to start a session from the dashboard.
+  <!-- Chat dropdown panel inside sticky bar -->
+  <div class="chat-toolbar-panel" id="chatToolbarPanel">
+    <div class="chat-messages" id="chat-msgs-toolbar"></div>
+    <div class="chat-input-row">
+      <input type="text" class="chat-input" id="chat-input-toolbar" placeholder="Message manager…" maxlength="300">
+      <button class="chat-send-btn" id="chat-send-toolbar">Send</button>
+    </div>
   </div>
 
+</div>
+<!-- ══ END STICKY TOP BAR ══ -->
+
+<div class="no-session-banner" id="noSessionBanner" style="display:none">
+  &#x26A0;&#xFE0F; No active session. Ask your manager to start a session from the dashboard.
+</div>
+
+<div class="page-coordinator">
   <table class="employee-table">
     <thead>
       <tr>
@@ -49,9 +65,6 @@
     <tbody id="employeeBody"></tbody>
   </table>
 </div>
-
-<!-- Chat panel — built and injected by chat.js via coordinator.js -->
-<div id="chatPanelWrap" style="max-width:860px;margin:16px auto 0;background:#fff;border-radius:10px;box-shadow:0 1px 4px rgba(0,0,0,0.10);overflow:hidden;"></div>
 
 <div id="toast"></div>
 
