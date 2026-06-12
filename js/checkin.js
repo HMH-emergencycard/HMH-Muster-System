@@ -21,8 +21,8 @@
     'Coordinators: ' + loc.coordinators.join(', ');
 
   // ════════════════════════════════════════════
-  // CHAT — wired immediately (no session/roster needed to open)
-  // Sender label: loc.label e.g. "ML 14" (location/employee side)
+  // CHAT — wired immediately, no session or roster needed
+  // Sender label: loc.label e.g. "ML 14"
   // ════════════════════════════════════════════
   var chatToggle  = document.getElementById('chatToolbarBtn');
   var chatPanel   = document.getElementById('chatToolbarPanel');
@@ -31,7 +31,6 @@
   var chatBadge   = document.getElementById('chat-unread-toolbar');
   var chatMsgList = document.getElementById('chat-msgs-toolbar');
 
-  // Toggle open/close — works immediately on page load
   if (chatToggle && chatPanel) {
     chatToggle.addEventListener('click', function () {
       chatPanel.classList.toggle('open');
@@ -44,7 +43,6 @@
     });
   }
 
-  // Send — location side messages labelled with location name e.g. "ML 14"
   function doSendChat() {
     var text = chatInput ? chatInput.value.trim() : '';
     if (!text) return;
@@ -56,7 +54,6 @@
   if (chatSend) chatSend.addEventListener('click', doSendChat);
   if (chatInput) chatInput.addEventListener('keydown', function (e) { if (e.key === 'Enter') doSendChat(); });
 
-  // Firebase listener — started only once session is available
   var chatListening = false;
   function startChatListener() {
     if (chatListening) return;
@@ -91,7 +88,7 @@
     });
   }
 
-  // ══ Roster + employee cards ══
+  // ══ Roster ══
   var wrap = document.getElementById('empListWrap');
   wrap.innerHTML = '<div class="empty-msg">&#x23F3; Loading roster&hellip;</div>';
 
@@ -113,12 +110,19 @@
       return lastName(a.name).localeCompare(lastName(b.name));
     });
 
+    // Declared here so the session-end handler can reset them
+    var currentCheckins = {};
+    var listening       = false;
+
     function refreshBanner() {
       var banner = document.getElementById('noSessionBanner');
       if (banner) banner.style.display = getActiveSession() ? 'none' : 'block';
     }
     refreshBanner();
 
+    // ── Firebase session watcher ──
+    // Fires immediately with current state AND whenever active session changes.
+    // The else branch locks the page when manager stops the session.
     db.ref('sessions').orderByChild('active').equalTo(true).limitToLast(1)
       .on('value', function (snap) {
         var val = snap.val();
@@ -129,7 +133,15 @@
           listenForCheckins();
           startChatListener();
         } else {
-          refreshBanner();
+          // ⚠️ Session ended — immediately lock out all check-ins
+          sessionStorage.removeItem('musterSession');
+          listening     = false;   // allow re-attach when next session starts
+          chatListening = false;
+          currentCheckins = {};
+          refreshBanner();         // shows the "no active session" banner
+          render({});              // clears all checked-in state from the UI
+          updateCount({});
+          showToast('\u23F9 Session ended by manager.');
         }
       });
 
@@ -174,9 +186,6 @@
     document.getElementById('searchBox').addEventListener('input', function () {
       render(currentCheckins, this.value.trim().toLowerCase());
     });
-
-    var currentCheckins = {};
-    var listening = false;
 
     function listenForCheckins() {
       if (listening) return;
