@@ -11,26 +11,6 @@
   <style>
     .checkin-page { max-width: 680px; margin: 0 auto; padding-bottom: 60px; }
 
-    .checkin-toolbar {
-      display: flex;
-      gap: 10px;
-      padding: 12px 16px;
-      background: #fff;
-      border-bottom: 1px solid #ddd;
-      align-items: center;
-      flex-wrap: wrap;
-    }
-
-    .checkin-search {
-      flex: 1;
-      min-width: 180px;
-      padding: 12px 16px;
-      border: 1.5px solid #ccc;
-      border-radius: 8px;
-      font-size: 1rem;
-    }
-    .checkin-search:focus { outline: none; border-color: #00AEEF; }
-
     /* Employee card list */
     .emp-card-list { padding: 12px 16px; display: flex; flex-direction: column; gap: 10px; }
 
@@ -131,16 +111,6 @@
     .contractor-form-btns { display: flex; gap: 8px; }
 
     .empty-msg { text-align: center; padding: 40px 16px; color: #aaa; font-size: 0.95rem; }
-
-    /* Chat panel wrapper on check-in page */
-    #chatPanelWrap {
-      max-width: 680px;
-      margin: 16px auto 0;
-      background: #fff;
-      border-radius: 10px;
-      box-shadow: 0 1px 4px rgba(0,0,0,0.10);
-      overflow: hidden;
-    }
   </style>
 </head>
 <body>
@@ -152,31 +122,44 @@
 </div>
 <div class="coordinators" id="coordinatorNames"></div>
 
+<!-- ══ STICKY TOP BAR — search + contractor + chat ══ -->
+<div class="page-top-bar">
+
+  <div class="checkin-toolbar">
+    <input type="text" class="checkin-search" id="searchBox" placeholder="&#x1F50D; Search your name&hellip;">
+    <button class="btn btn-contractor" id="addContractorBtn" style="white-space:nowrap;">&#x1F477; + Contractor</button>
+    <button class="btn-chat-toolbar" id="chatToolbarBtn">&#x1F4AC; Chat <span class="chat-unread" id="chat-unread-toolbar"></span></button>
+  </div>
+
+  <!-- Contractor form -->
+  <div class="contractor-form-card" id="contractorForm" style="display:none;margin:0;border-radius:0;border-left:none;border-right:none;border-top:none;">
+    <div style="display:flex;gap:10px;flex-wrap:wrap;padding:10px 16px;background:#fff8f0;border-bottom:1px solid #ffcc80;">
+      <input type="text" id="contractorName" placeholder="Contractor Name" style="flex:1;min-width:140px;padding:9px 12px;border:1.5px solid #ffb74d;border-radius:8px;font-size:0.9rem;">
+      <input type="text" id="contractorCompany" placeholder="Company Name" style="flex:1;min-width:140px;padding:9px 12px;border:1.5px solid #ffb74d;border-radius:8px;font-size:0.9rem;">
+      <button class="btn btn-success" id="contractorSubmit">&#x2705; Check In</button>
+      <button class="btn btn-secondary" id="contractorCancel">Cancel</button>
+    </div>
+  </div>
+
+  <!-- Chat dropdown panel -->
+  <div class="chat-toolbar-panel" id="chatToolbarPanel">
+    <div class="chat-messages" id="chat-msgs-toolbar"></div>
+    <div class="chat-input-row">
+      <input type="text" class="chat-input" id="chat-input-toolbar" placeholder="Message manager…" maxlength="300">
+      <button class="chat-send-btn" id="chat-send-toolbar">Send</button>
+    </div>
+  </div>
+
+</div>
+<!-- ══ END STICKY TOP BAR ══ -->
+
 <div class="no-session-banner" id="noSessionBanner" style="display:none;">
   &#x26A0;&#xFE0F; No active session. Ask your coordinator to start a session.
 </div>
 
 <div class="checkin-page">
-  <div class="checkin-toolbar">
-    <input type="text" class="checkin-search" id="searchBox" placeholder="&#x1F50D; Search your name&hellip;">
-    <button class="btn btn-contractor" id="addContractorBtn" style="white-space:nowrap;">&#x1F477; + Contractor</button>
-  </div>
-
-  <!-- Contractor form -->
-  <div class="contractor-form-card" id="contractorForm" style="display:none;margin-bottom:12px;">
-    <input type="text" id="contractorName" placeholder="Contractor Name">
-    <input type="text" id="contractorCompany" placeholder="Company Name">
-    <div class="contractor-form-btns">
-      <button class="btn btn-success" id="contractorSubmit" style="flex:1;">&#x2705; Check In</button>
-      <button class="btn btn-secondary" id="contractorCancel" style="flex:1;">Cancel</button>
-    </div>
-  </div>
-
   <div id="empListWrap"></div>
 </div>
-
-<!-- Chat panel — built and injected by chat.js via checkin.js -->
-<div id="chatPanelWrap"></div>
 
 <div id="toast"></div>
 

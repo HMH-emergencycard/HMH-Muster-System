@@ -56,22 +56,22 @@
           setActiveSession(sessionId);
           refreshBanner();
           listenForCheckins();
+          initToolbarChat();
         } else {
           refreshBanner();
         }
       });
 
     // ── Contractor form ──
-    var addBtn      = document.getElementById('addContractorBtn');
-    var ctForm      = document.getElementById('contractorForm');
-    var ctName      = document.getElementById('contractorName');
-    var ctCompany   = document.getElementById('contractorCompany');
-    var ctSubmit    = document.getElementById('contractorSubmit');
-    var ctCancel    = document.getElementById('contractorCancel');
+    var addBtn    = document.getElementById('addContractorBtn');
+    var ctForm    = document.getElementById('contractorForm');
+    var ctName    = document.getElementById('contractorName');
+    var ctCompany = document.getElementById('contractorCompany');
+    var ctSubmit  = document.getElementById('contractorSubmit');
+    var ctCancel  = document.getElementById('contractorCancel');
 
     addBtn.addEventListener('click', function () {
-      ctForm.style.display = ctForm.style.display === 'none' ? 'flex' : 'none';
-      ctForm.style.flexDirection = 'column';
+      ctForm.style.display = ctForm.style.display === 'none' ? 'block' : 'none';
       if (ctForm.style.display !== 'none') ctName.focus();
     });
     ctCancel.addEventListener('click', function () {
@@ -119,7 +119,10 @@
       });
     }
 
-    if (getActiveSession()) listenForCheckins();
+    if (getActiveSession()) {
+      listenForCheckins();
+      initToolbarChat();
+    }
 
     // ── Check-in handler ──
     window.doCheckIn = function (workerId, status) {
@@ -156,7 +159,6 @@
         return;
       }
 
-      // Split into not-in and checked-in sections (unless searching)
       if (filter.length < 2) {
         var notIn     = pool.filter(function (e) { return !checkins[e.workerId]; });
         var checkedIn = pool.filter(function (e) { return !!checkins[e.workerId]; });
@@ -187,7 +189,6 @@
           wrap.appendChild(list2);
         }
 
-        // Contractors
         var contractors = Object.entries(checkins).filter(function (e) {
           return e[1].isContractor && e[1].location === locationId;
         });
@@ -214,7 +215,6 @@
         }
 
       } else {
-        // Search mode — flat list
         var list4 = document.createElement('div');
         list4.className = 'emp-card-list';
         pool.forEach(function (emp) { list4.appendChild(buildCard(emp, checkins)); });
@@ -271,17 +271,85 @@
     render({});
     updateCount({});
 
-    // ── Chat panel (muster-point side) ──
-    var chatWrap = document.getElementById('chatPanelWrap');
-    if (chatWrap) {
-      var panel = buildChatPanel({
-        locationId:    locationId,
-        locationLabel: loc.label,
-        senderType:    'location',
-        senderLabel:   loc.label   // e.g. "ML 4" — shows as "ML 4: message text"
+    // ════════════════════════════════════════════
+    // TOOLBAR CHAT — wired to sticky top bar
+    // ════════════════════════════════════════════
+    var chatInited = false;
+
+    function initToolbarChat() {
+      if (chatInited) return;
+      chatInited = true;
+
+      var toggleBtn = document.getElementById('chatToolbarBtn');
+      var panel     = document.getElementById('chatToolbarPanel');
+      var msgList   = document.getElementById('chat-msgs-toolbar');
+      var input     = document.getElementById('chat-input-toolbar');
+      var sendBtn   = document.getElementById('chat-send-toolbar');
+      var badge     = document.getElementById('chat-unread-toolbar');
+
+      var lastSeenCount = 0;
+      var unreadCount   = 0;
+
+      // Toggle open/close
+      toggleBtn.addEventListener('click', function () {
+        panel.classList.toggle('open');
+        if (panel.classList.contains('open')) {
+          unreadCount   = 0;
+          lastSeenCount = msgList.querySelectorAll('.chat-msg').length;
+          badge.textContent = '';
+          badge.classList.remove('visible');
+          toggleBtn.classList.remove('has-unread');
+          msgList.scrollTop = msgList.scrollHeight;
+          input.focus();
+        }
       });
-      chatWrap.appendChild(panel);
+
+      // Send
+      function doSend() {
+        var text = input.value.trim();
+        if (!text) return;
+        sendChatMessage(locationId, loc.label, 'location', text)
+          .then(function () { input.value = ''; })
+          .catch(function (err) { showToast('Could not send: ' + err.message); });
+      }
+      sendBtn.addEventListener('click', doSend);
+      input.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter') doSend();
+      });
+
+      // Live listener
+      listenChatMessages(locationId, function (msgs) {
+        msgList.innerHTML = '';
+        if (msgs.length === 0) {
+          msgList.innerHTML = '<div class="chat-empty">No messages yet</div>';
+        } else {
+          msgs.forEach(function (m) {
+            var bubble = document.createElement('div');
+            bubble.className = 'chat-msg ' +
+              (m.senderType === 'manager' ? 'from-manager' : 'from-location');
+            bubble.innerHTML =
+              '<div class="chat-sender">' + m.sender + '</div>' +
+              '<div>' + escapeHtml(m.text) + '</div>' +
+              '<div class="chat-time">' + formatChatTime(m.ts) + '</div>';
+            msgList.appendChild(bubble);
+          });
+        }
+
+        if (panel.classList.contains('open')) {
+          msgList.scrollTop = msgList.scrollHeight;
+          lastSeenCount = msgs.length;
+        } else {
+          var incoming = msgs.filter(function (m) { return m.senderType === 'manager'; });
+          if (incoming.length > lastSeenCount) {
+            unreadCount = incoming.length - lastSeenCount;
+            badge.textContent = unreadCount;
+            badge.classList.add('visible');
+            toggleBtn.classList.add('has-unread');
+          }
+        }
+      });
     }
+
   }
 
 })();
