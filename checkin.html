@@ -131,6 +131,16 @@
     .contractor-form-btns { display: flex; gap: 8px; }
 
     .empty-msg { text-align: center; padding: 40px 16px; color: #aaa; font-size: 0.95rem; }
+
+    /* Chat panel wrapper on check-in page */
+    #chatPanelWrap {
+      max-width: 680px;
+      margin: 16px auto 0;
+      background: #fff;
+      border-radius: 10px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.10);
+      overflow: hidden;
+    }
   </style>
 </head>
 <body>
@@ -165,11 +175,15 @@
   <div id="empListWrap"></div>
 </div>
 
+<!-- Chat panel — built and injected by chat.js via checkin.js -->
+<div id="chatPanelWrap"></div>
+
 <div id="toast"></div>
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script src="js/app.js"></script>
+<script src="js/chat.js"></script>
 <script src="js/checkin.js"></script>
 <script>
   if ('serviceWorker' in navigator) {
