@@ -57,6 +57,15 @@
         '<div class="dash-employee-list" id="list-' + loc.id + '"></div>';
 
       grid.appendChild(card);
+
+      // ── Append chat panel (manager side) to each card ──
+      var chatPanel = buildChatPanel({
+        locationId:    loc.id,
+        locationLabel: loc.label,
+        senderType:    'manager',
+        senderLabel:   'Manager'
+      });
+      card.appendChild(chatPanel);
     });
 
     document.getElementById('overallCount').textContent = '0 / ' + EMPLOYEES.length;
@@ -314,6 +323,10 @@
         renderLocationList(locId, getEmployeesByLocation(locId), checkins, listEl);
       }
     }
+
+    // Remove notify dot when the card is expanded
+    var dot = document.getElementById('notify-dot-' + locId);
+    if (dot) dot.remove();
   };
 
 })();
