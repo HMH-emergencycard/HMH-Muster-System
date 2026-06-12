@@ -50,11 +50,15 @@
   </table>
 </div>
 
+<!-- Chat panel — built and injected by chat.js via coordinator.js -->
+<div id="chatPanelWrap" style="max-width:860px;margin:16px auto 0;background:#fff;border-radius:10px;box-shadow:0 1px 4px rgba(0,0,0,0.10);overflow:hidden;"></div>
+
 <div id="toast"></div>
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script src="js/app.js"></script>
+<script src="js/chat.js"></script>
 <script src="js/coordinator.js"></script>
 <script>
   if ('serviceWorker' in navigator) {
