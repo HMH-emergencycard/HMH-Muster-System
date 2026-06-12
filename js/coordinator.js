@@ -202,11 +202,9 @@
     function renderTable(checkins, filter) {
       filter = filter || '';
 
-      // Collect all <tr> elements in the correct order into this array
       var rows = [];
 
       if (filter.length >= 2) {
-        // Search mode: all employees alpha by last name
         var pool = EMPLOYEES.filter(function (e) {
           return e.name.toLowerCase().indexOf(filter) !== -1 ||
                  e.workerId.toLowerCase().indexOf(filter) !== -1;
@@ -218,14 +216,11 @@
         });
 
       } else {
-        // Normal mode:
-        // SECTION 1 — not yet checked in, alpha by last name (already sorted)
         var notIn = employees.filter(function (e) { return !checkins[e.workerId]; });
         notIn.forEach(function (emp) {
           rows.push(buildEmployeeRow(emp, checkins));
         });
 
-        // SECTION 2 — employees who have checked in, by check-in time
         var checkedIn = employees.filter(function (e) { return !!checkins[e.workerId]; });
         checkedIn.sort(function (a, b) {
           return new Date(checkins[a.workerId].checkedInAt || 0) -
@@ -235,7 +230,6 @@
           rows.push(buildEmployeeRow(emp, checkins));
         });
 
-        // SECTION 3 — contractors at this location, by check-in time (always last)
         var contractors = Object.entries(checkins)
           .filter(function (entry) {
             return entry[1].isContractor === true && entry[1].location === locationId;
@@ -256,7 +250,6 @@
         });
       }
 
-      // Clear tbody and append all rows in order
       tbody.innerHTML = '';
       if (rows.length === 0) {
         var empty = document.createElement('tr');
@@ -318,6 +311,18 @@
 
     renderTable({});
     updateCount({});
+
+    // ── Chat panel (coordinator/location side) ──
+    var chatWrap = document.getElementById('chatPanelWrap');
+    if (chatWrap) {
+      var panel = buildChatPanel({
+        locationId:    locationId,
+        locationLabel: loc.label,
+        senderType:    'location',
+        senderLabel:   loc.label  // e.g. "ML 4" — shows as "ML 4: message text"
+      });
+      chatWrap.appendChild(panel);
+    }
   }
 
 })();
