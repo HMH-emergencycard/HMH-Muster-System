@@ -470,11 +470,9 @@ body {
 }
 
 /* ══════════════════════════════════════════
-   CHAT PANEL
+   CHAT PANEL (dashboard cards)
    ══════════════════════════════════════════ */
 
-/* Toggle button shown at the bottom of each muster-point check-in page
-   and inside each dashboard card */
 .chat-toggle-btn {
   width: 100%;
   background: #e3f6fd;
@@ -492,7 +490,6 @@ body {
 }
 .chat-toggle-btn:hover { background: #b3e5fc; }
 
-/* Red badge showing unread message count */
 .chat-unread {
   background: #dc3545;
   color: #fff;
@@ -504,7 +501,6 @@ body {
 }
 .chat-unread.visible { display: inline-block; }
 
-/* The collapsible chat body */
 .chat-body {
   display: none;
   flex-direction: column;
@@ -513,7 +509,6 @@ body {
 }
 .chat-body.open { display: flex; }
 
-/* Scrollable message list */
 .chat-messages {
   max-height: 220px;
   overflow-y: auto;
@@ -523,7 +518,6 @@ body {
   gap: 6px;
 }
 
-/* Individual message bubble */
 .chat-msg {
   font-size: 0.82rem;
   padding: 6px 10px;
@@ -531,36 +525,29 @@ body {
   max-width: 88%;
   word-break: break-word;
 }
-
-/* Messages sent FROM the muster point */
 .chat-msg.from-location {
   background: #dbeafe;
   color: #1e3a5f;
   align-self: flex-start;
   border-bottom-left-radius: 2px;
 }
-
-/* Messages sent FROM the manager */
 .chat-msg.from-manager {
   background: #dcfce7;
   color: #14532d;
   align-self: flex-end;
   border-bottom-right-radius: 2px;
 }
-
 .chat-msg .chat-sender {
   font-weight: bold;
   font-size: 0.74rem;
   margin-bottom: 2px;
 }
-
 .chat-msg .chat-time {
   font-size: 0.68rem;
   color: #999;
   margin-top: 2px;
 }
 
-/* Empty state */
 .chat-empty {
   font-size: 0.8rem;
   color: #aaa;
@@ -568,7 +555,6 @@ body {
   padding: 12px 0;
 }
 
-/* Input row at the bottom of the chat body */
 .chat-input-row {
   display: flex;
   gap: 6px;
@@ -576,7 +562,6 @@ body {
   background: #fff;
   border-top: 1px solid #eee;
 }
-
 .chat-input {
   flex: 1;
   padding: 8px 12px;
@@ -586,7 +571,6 @@ body {
   min-width: 0;
 }
 .chat-input:focus { outline: none; border-color: #00AEEF; }
-
 .chat-send-btn {
   background: #00AEEF;
   color: #fff;
@@ -601,7 +585,6 @@ body {
 }
 .chat-send-btn:active { background: #0095cc; }
 
-/* Pulsing red dot on dashboard cards with unread messages */
 .chat-notify-dot {
   width: 9px;
   height: 9px;
@@ -611,4 +594,69 @@ body {
   margin-left: 6px;
   vertical-align: middle;
   animation: pulse 1s infinite;
+}
+
+/* ══════════════════════════════════════════
+   STICKY TOP BAR (coordinator + checkin)
+   ══════════════════════════════════════════ */
+
+.page-top-bar {
+  position: sticky;
+  top: 0;
+  z-index: 300;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+
+/* Chat button that lives inside the sticky toolbar */
+.btn-chat-toolbar {
+  background: #e3f6fd;
+  color: #007aad;
+  border: 1px solid #b3e5fc;
+  font-weight: bold;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.95rem;
+  transition: background 0.2s;
+}
+.btn-chat-toolbar:hover { background: #b3e5fc; }
+.btn-chat-toolbar.has-unread {
+  background: #fdecea;
+  color: #dc3545;
+  border-color: #f5c6cb;
+  animation: pulse 1.5s infinite;
+}
+
+/* Dropdown chat panel inside the sticky bar */
+.chat-toolbar-panel {
+  display: none;
+  flex-direction: column;
+  background: #f9fdff;
+  border-top: 2px solid #00AEEF;
+}
+.chat-toolbar-panel.open { display: flex; }
+
+.chat-toolbar-panel .chat-messages {
+  max-height: 200px;
+  overflow-y: auto;
+  padding: 10px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.chat-toolbar-panel .chat-input-row {
+  display: flex;
+  gap: 6px;
+  padding: 8px 16px;
+  background: #fff;
+  border-top: 1px solid #eee;
+}
+
+@media (max-width: 600px) {
+  .btn-chat-toolbar { font-size: 0.82rem; padding: 7px 10px; }
 }
