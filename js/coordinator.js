@@ -59,7 +59,7 @@
           setActiveSession(sessionId);
           checkSessionBanner();
           listenForCheckins();
-          initToolbarChat();
+          startChatListener();
         }
       });
 
@@ -107,7 +107,7 @@
       renderTable(currentCheckins, this.value.trim().toLowerCase());
     });
 
-    // ── Add Contractor form ──
+    // ── Contractor form ──
     var addBtn                 = document.getElementById('addContractorBtn');
     var contractorForm         = document.getElementById('contractorForm');
     var contractorNameInput    = document.getElementById('contractorName');
@@ -119,19 +119,16 @@
       contractorForm.style.display = contractorForm.style.display === 'none' ? 'flex' : 'none';
       if (contractorForm.style.display === 'flex') contractorNameInput.focus();
     });
-
     contractorCancel.addEventListener('click', function () {
       contractorForm.style.display = 'none';
       contractorNameInput.value    = '';
       contractorCompanyInput.value = '';
     });
-
     contractorSubmit.addEventListener('click', function () {
       var name    = contractorNameInput.value.trim();
       var company = contractorCompanyInput.value.trim();
       if (!name) { showToast('Please enter a contractor name.'); return; }
       if (!getActiveSession()) { showToast('No active session. Ask your manager to start one.'); return; }
-
       var session = getActiveSession();
       var key     = 'contractor_' + Date.now();
       db.ref('sessions/' + session + '/checkins/' + key).set({
@@ -166,15 +163,12 @@
 
     if (getActiveSession()) {
       listenForCheckins();
-      initToolbarChat();
+      startChatListener();
     }
 
     // ── Check-in handler ──
     function handleCheckIn(workerId, status) {
-      if (!getActiveSession()) {
-        showToast('No active session. Ask your manager to start one.');
-        return;
-      }
+      if (!getActiveSession()) { showToast('No active session. Ask your manager to start one.'); return; }
       var emp = getEmployeeById(workerId);
       if (!emp) { showToast('Employee not found: ' + workerId); return; }
       checkInEmployee(workerId, locationId, status).then(function () {
@@ -233,7 +227,6 @@
           .sort(function (a, b) {
             return new Date(a[1].checkedInAt || 0) - new Date(b[1].checkedInAt || 0);
           });
-
         contractors.forEach(function (entry) {
           var ci = entry[1];
           var tr = document.createElement('tr');
@@ -264,9 +257,7 @@
       var assignedLbl = isWalkIn
         ? ' <small style="color:#888;">(Assigned: ' + (getLocation(emp.assignedLocation) ? getLocation(emp.assignedLocation).label : emp.assignedLocation) + ')</small>'
         : '';
-
       var pillHtml = '', statusClass = '', actionBtn = '';
-
       if (!ci) {
         pillHtml    = '<span class="status-pill pill-red">Not In</span>';
         statusClass = 'status-unchecked';
@@ -289,7 +280,6 @@
           '<button class="btn btn-primary" style="padding:5px 10px;font-size:0.8rem;margin-right:4px" onclick="doCheckIn(\'' + emp.workerId + '\',\'present\',event)">Move Here</button>' +
           '<button class="btn btn-offsite" style="padding:5px 10px;font-size:0.8rem;" onclick="doCheckIn(\'' + emp.workerId + '\',\'offsite\',event)">&#x1F3E0; Off-Site</button>';
       }
-
       var tr       = document.createElement('tr');
       tr.id        = 'row-' + emp.workerId;
       tr.className = 'employee-row ' + statusClass;
@@ -308,82 +298,73 @@
     renderTable({});
     updateCount({});
 
-    // ══════════════════════════════════════════
-    // TOOLBAR CHAT — wired to sticky top bar
-    // ══════════════════════════════════════════
-    var chatInited = false;
+    // ════════════════════════════════════════════
+    // TOOLBAR CHAT
+    // Toggle wired immediately — NO session required
+    // Firebase listener started only once session is available
+    // ════════════════════════════════════════════
+    var chatToggle  = document.getElementById('chatToolbarBtn');
+    var chatPanel   = document.getElementById('chatToolbarPanel');
+    var chatInput   = document.getElementById('chat-input-toolbar');
+    var chatSend    = document.getElementById('chat-send-toolbar');
+    var chatBadge   = document.getElementById('chat-unread-toolbar');
+    var chatMsgList = document.getElementById('chat-msgs-toolbar');
 
-    function initToolbarChat() {
-      if (chatInited) return;
-      chatInited = true;
-
-      var toggleBtn  = document.getElementById('chatToolbarBtn');
-      var panel      = document.getElementById('chatToolbarPanel');
-      var msgList    = document.getElementById('chat-msgs-toolbar');
-      var input      = document.getElementById('chat-input-toolbar');
-      var sendBtn    = document.getElementById('chat-send-toolbar');
-      var badge      = document.getElementById('chat-unread-toolbar');
-
-      var lastSeenCount = 0;
-      var unreadCount   = 0;
-
-      // ── Toggle open/close ──
-      toggleBtn.addEventListener('click', function () {
-        panel.classList.toggle('open');
-        if (panel.classList.contains('open')) {
-          // clear unread
-          unreadCount   = 0;
-          lastSeenCount = msgList.children.length;
-          badge.textContent = '';
-          badge.classList.remove('visible');
-          toggleBtn.classList.remove('has-unread');
-          msgList.scrollTop = msgList.scrollHeight;
-          input.focus();
+    // Wire toggle immediately
+    if (chatToggle && chatPanel) {
+      chatToggle.addEventListener('click', function () {
+        chatPanel.classList.toggle('open');
+        if (chatPanel.classList.contains('open')) {
+          if (chatBadge) { chatBadge.textContent = ''; chatBadge.classList.remove('visible'); }
+          chatToggle.classList.remove('has-unread');
+          if (chatMsgList) chatMsgList.scrollTop = chatMsgList.scrollHeight;
+          if (chatInput) chatInput.focus();
         }
       });
+    }
 
-      // ── Send ──
-      function doSend() {
-        var text = input.value.trim();
-        if (!text) return;
-        sendChatMessage(locationId, loc.label, 'location', text)
-          .then(function () { input.value = ''; })
-          .catch(function (err) { showToast('Could not send: ' + err.message); });
-      }
-      sendBtn.addEventListener('click', doSend);
-      input.addEventListener('keydown', function (e) {
-        if (e.key === 'Enter') doSend();
-      });
+    // Wire send button immediately
+    function doSendChat() {
+      var text = chatInput ? chatInput.value.trim() : '';
+      if (!text) return;
+      if (!getActiveSession()) { showToast('No active session — cannot send message.'); return; }
+      sendChatMessage(locationId, loc.label, 'location', text)
+        .then(function () { if (chatInput) chatInput.value = ''; })
+        .catch(function (err) { showToast('Could not send: ' + err.message); });
+    }
+    if (chatSend) chatSend.addEventListener('click', doSendChat);
+    if (chatInput) chatInput.addEventListener('keydown', function (e) { if (e.key === 'Enter') doSendChat(); });
 
-      // ── Live listener ──
+    // Start Firebase listener — only once session exists
+    var chatListening = false;
+    function startChatListener() {
+      if (chatListening) return;
+      chatListening = true;
+      var lastSeenCount = 0;
       listenChatMessages(locationId, function (msgs) {
-        msgList.innerHTML = '';
+        if (!chatMsgList) return;
+        chatMsgList.innerHTML = '';
         if (msgs.length === 0) {
-          msgList.innerHTML = '<div class="chat-empty">No messages yet</div>';
+          chatMsgList.innerHTML = '<div class="chat-empty">No messages yet</div>';
         } else {
           msgs.forEach(function (m) {
             var bubble = document.createElement('div');
-            bubble.className = 'chat-msg ' +
-              (m.senderType === 'manager' ? 'from-manager' : 'from-location');
+            bubble.className = 'chat-msg ' + (m.senderType === 'manager' ? 'from-manager' : 'from-location');
             bubble.innerHTML =
               '<div class="chat-sender">' + m.sender + '</div>' +
               '<div>' + escapeHtml(m.text) + '</div>' +
               '<div class="chat-time">' + formatChatTime(m.ts) + '</div>';
-            msgList.appendChild(bubble);
+            chatMsgList.appendChild(bubble);
           });
         }
-
-        if (panel.classList.contains('open')) {
-          msgList.scrollTop = msgList.scrollHeight;
+        if (chatPanel && chatPanel.classList.contains('open')) {
+          chatMsgList.scrollTop = chatMsgList.scrollHeight;
           lastSeenCount = msgs.length;
         } else {
-          // Count incoming manager messages as unread
           var incoming = msgs.filter(function (m) { return m.senderType === 'manager'; });
           if (incoming.length > lastSeenCount) {
-            unreadCount = incoming.length - lastSeenCount;
-            badge.textContent = unreadCount;
-            badge.classList.add('visible');
-            toggleBtn.classList.add('has-unread');
+            if (chatBadge) { chatBadge.textContent = incoming.length - lastSeenCount; chatBadge.classList.add('visible'); }
+            if (chatToggle) chatToggle.classList.add('has-unread');
           }
         }
       });
