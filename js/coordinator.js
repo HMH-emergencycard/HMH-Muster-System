@@ -19,6 +19,78 @@
   document.getElementById('coordinatorNames').textContent =
     'Coordinators: ' + loc.coordinators.join(', ');
 
+  // ════════════════════════════════════════════
+  // CHAT — wired immediately (no session/roster needed to open)
+  // Sender label: "Coordinator" (distinct from location-only side)
+  // ════════════════════════════════════════════
+  var chatToggle  = document.getElementById('chatToolbarBtn');
+  var chatPanel   = document.getElementById('chatToolbarPanel');
+  var chatInput   = document.getElementById('chat-input-toolbar');
+  var chatSend    = document.getElementById('chat-send-toolbar');
+  var chatBadge   = document.getElementById('chat-unread-toolbar');
+  var chatMsgList = document.getElementById('chat-msgs-toolbar');
+
+  // Toggle open/close — works immediately on page load
+  if (chatToggle && chatPanel) {
+    chatToggle.addEventListener('click', function () {
+      chatPanel.classList.toggle('open');
+      if (chatPanel.classList.contains('open')) {
+        if (chatBadge) { chatBadge.textContent = ''; chatBadge.classList.remove('visible'); }
+        chatToggle.classList.remove('has-unread');
+        if (chatMsgList) chatMsgList.scrollTop = chatMsgList.scrollHeight;
+        if (chatInput) chatInput.focus();
+      }
+    });
+  }
+
+  // Send — coordinator messages labelled "Coordinator"
+  function doSendChat() {
+    var text = chatInput ? chatInput.value.trim() : '';
+    if (!text) return;
+    if (!getActiveSession()) { showToast('No active session — cannot send message.'); return; }
+    sendChatMessage(locationId, 'Coordinator', 'coordinator', text)
+      .then(function () { if (chatInput) chatInput.value = ''; })
+      .catch(function (err) { showToast('Could not send: ' + err.message); });
+  }
+  if (chatSend) chatSend.addEventListener('click', doSendChat);
+  if (chatInput) chatInput.addEventListener('keydown', function (e) { if (e.key === 'Enter') doSendChat(); });
+
+  // Firebase listener — started only once session is available
+  var chatListening = false;
+  function startChatListener() {
+    if (chatListening) return;
+    chatListening = true;
+    var lastSeenCount = 0;
+    listenChatMessages(locationId, function (msgs) {
+      if (!chatMsgList) return;
+      chatMsgList.innerHTML = '';
+      if (msgs.length === 0) {
+        chatMsgList.innerHTML = '<div class="chat-empty">No messages yet</div>';
+      } else {
+        msgs.forEach(function (m) {
+          var bubble = document.createElement('div');
+          bubble.className = 'chat-msg ' + (m.senderType === 'manager' ? 'from-manager' : 'from-location');
+          bubble.innerHTML =
+            '<div class="chat-sender">' + m.sender + '</div>' +
+            '<div>' + escapeHtml(m.text) + '</div>' +
+            '<div class="chat-time">' + formatChatTime(m.ts) + '</div>';
+          chatMsgList.appendChild(bubble);
+        });
+      }
+      if (chatPanel && chatPanel.classList.contains('open')) {
+        chatMsgList.scrollTop = chatMsgList.scrollHeight;
+        lastSeenCount = msgs.length;
+      } else {
+        var incoming = msgs.filter(function (m) { return m.senderType === 'manager'; });
+        if (incoming.length > lastSeenCount) {
+          if (chatBadge) { chatBadge.textContent = incoming.length - lastSeenCount; chatBadge.classList.add('visible'); }
+          if (chatToggle) chatToggle.classList.add('has-unread');
+        }
+      }
+    });
+  }
+
+  // ══ Roster + employee table ══
   var tbody = document.getElementById('employeeBody');
   tbody.innerHTML = '<tr><td colspan="3" style="padding:16px;text-align:center;color:#888;">&#x23F3; Loading roster...</td></tr>';
 
@@ -39,7 +111,6 @@
 
   function init() {
     var employees = getEmployeesByLocation(locationId);
-
     employees.sort(function (a, b) {
       return lastName(a.name).localeCompare(lastName(b.name));
     });
@@ -102,7 +173,7 @@
       });
     });
 
-    // ── Search box ──
+    // ── Search ──
     document.getElementById('searchBox').addEventListener('input', function () {
       renderTable(currentCheckins, this.value.trim().toLowerCase());
     });
@@ -147,7 +218,7 @@
       });
     });
 
-    // ── Live checkin listener ──
+    // ── Live checkins ──
     var currentCheckins = {};
     var listening       = false;
 
@@ -195,11 +266,9 @@
         accounted + ' / ' + employees.length + ' Accounted For';
     }
 
-    // ── Render table ──
     function renderTable(checkins, filter) {
       filter = filter || '';
       var rows = [];
-
       if (filter.length >= 2) {
         var pool = EMPLOYEES.filter(function (e) {
           return e.name.toLowerCase().indexOf(filter) !== -1 ||
@@ -208,37 +277,28 @@
           return lastName(a.name).localeCompare(lastName(b.name));
         });
         pool.forEach(function (emp) { rows.push(buildEmployeeRow(emp, checkins)); });
-
       } else {
         var notIn = employees.filter(function (e) { return !checkins[e.workerId]; });
         notIn.forEach(function (emp) { rows.push(buildEmployeeRow(emp, checkins)); });
-
         var checkedIn = employees.filter(function (e) { return !!checkins[e.workerId]; });
         checkedIn.sort(function (a, b) {
           return new Date(checkins[a.workerId].checkedInAt || 0) -
                  new Date(checkins[b.workerId].checkedInAt || 0);
         });
         checkedIn.forEach(function (emp) { rows.push(buildEmployeeRow(emp, checkins)); });
-
         var contractors = Object.entries(checkins)
-          .filter(function (entry) {
-            return entry[1].isContractor === true && entry[1].location === locationId;
-          })
-          .sort(function (a, b) {
-            return new Date(a[1].checkedInAt || 0) - new Date(b[1].checkedInAt || 0);
-          });
+          .filter(function (entry) { return entry[1].isContractor === true && entry[1].location === locationId; })
+          .sort(function (a, b) { return new Date(a[1].checkedInAt || 0) - new Date(b[1].checkedInAt || 0); });
         contractors.forEach(function (entry) {
           var ci = entry[1];
           var tr = document.createElement('tr');
           tr.className = 'employee-row status-contractor';
           tr.innerHTML =
             '<td><strong>' + ci.name + '</strong> <small style="color:#e65100;">(Contractor &mdash; ' + ci.company + ')</small></td>' +
-            '<td><span class="status-pill pill-orange">&#x1F477; Contractor</span></td>' +
-            '<td></td>';
+            '<td><span class="status-pill pill-orange">&#x1F477; Contractor</span></td><td></td>';
           rows.push(tr);
         });
       }
-
       tbody.innerHTML = '';
       if (rows.length === 0) {
         var empty = document.createElement('tr');
@@ -297,79 +357,6 @@
 
     renderTable({});
     updateCount({});
-
-    // ════════════════════════════════════════════
-    // TOOLBAR CHAT
-    // Toggle wired immediately — NO session required
-    // Firebase listener started only once session is available
-    // ════════════════════════════════════════════
-    var chatToggle  = document.getElementById('chatToolbarBtn');
-    var chatPanel   = document.getElementById('chatToolbarPanel');
-    var chatInput   = document.getElementById('chat-input-toolbar');
-    var chatSend    = document.getElementById('chat-send-toolbar');
-    var chatBadge   = document.getElementById('chat-unread-toolbar');
-    var chatMsgList = document.getElementById('chat-msgs-toolbar');
-
-    // Wire toggle immediately
-    if (chatToggle && chatPanel) {
-      chatToggle.addEventListener('click', function () {
-        chatPanel.classList.toggle('open');
-        if (chatPanel.classList.contains('open')) {
-          if (chatBadge) { chatBadge.textContent = ''; chatBadge.classList.remove('visible'); }
-          chatToggle.classList.remove('has-unread');
-          if (chatMsgList) chatMsgList.scrollTop = chatMsgList.scrollHeight;
-          if (chatInput) chatInput.focus();
-        }
-      });
-    }
-
-    // Wire send button immediately
-    function doSendChat() {
-      var text = chatInput ? chatInput.value.trim() : '';
-      if (!text) return;
-      if (!getActiveSession()) { showToast('No active session — cannot send message.'); return; }
-      sendChatMessage(locationId, loc.label, 'location', text)
-        .then(function () { if (chatInput) chatInput.value = ''; })
-        .catch(function (err) { showToast('Could not send: ' + err.message); });
-    }
-    if (chatSend) chatSend.addEventListener('click', doSendChat);
-    if (chatInput) chatInput.addEventListener('keydown', function (e) { if (e.key === 'Enter') doSendChat(); });
-
-    // Start Firebase listener — only once session exists
-    var chatListening = false;
-    function startChatListener() {
-      if (chatListening) return;
-      chatListening = true;
-      var lastSeenCount = 0;
-      listenChatMessages(locationId, function (msgs) {
-        if (!chatMsgList) return;
-        chatMsgList.innerHTML = '';
-        if (msgs.length === 0) {
-          chatMsgList.innerHTML = '<div class="chat-empty">No messages yet</div>';
-        } else {
-          msgs.forEach(function (m) {
-            var bubble = document.createElement('div');
-            bubble.className = 'chat-msg ' + (m.senderType === 'manager' ? 'from-manager' : 'from-location');
-            bubble.innerHTML =
-              '<div class="chat-sender">' + m.sender + '</div>' +
-              '<div>' + escapeHtml(m.text) + '</div>' +
-              '<div class="chat-time">' + formatChatTime(m.ts) + '</div>';
-            chatMsgList.appendChild(bubble);
-          });
-        }
-        if (chatPanel && chatPanel.classList.contains('open')) {
-          chatMsgList.scrollTop = chatMsgList.scrollHeight;
-          lastSeenCount = msgs.length;
-        } else {
-          var incoming = msgs.filter(function (m) { return m.senderType === 'manager'; });
-          if (incoming.length > lastSeenCount) {
-            if (chatBadge) { chatBadge.textContent = incoming.length - lastSeenCount; chatBadge.classList.add('visible'); }
-            if (chatToggle) chatToggle.classList.add('has-unread');
-          }
-        }
-      });
-    }
-
   }
 
 })();
