@@ -270,6 +270,18 @@
 
     render({});
     updateCount({});
+
+    // ── Chat panel (muster-point side) ──
+    var chatWrap = document.getElementById('chatPanelWrap');
+    if (chatWrap) {
+      var panel = buildChatPanel({
+        locationId:    locationId,
+        locationLabel: loc.label,
+        senderType:    'location',
+        senderLabel:   loc.label   // e.g. "ML 4" — shows as "ML 4: message text"
+      });
+      chatWrap.appendChild(panel);
+    }
   }
 
 })();
